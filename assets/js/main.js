@@ -107,3 +107,17 @@ if (dateField) {
   const today = new Date();
   dateField.min = today.toISOString().split("T")[0];
 }
+
+if (window.matchMedia("(pointer:fine)").matches) {
+  document.querySelectorAll(".service-v2").forEach(card => {
+    card.addEventListener("mousemove", event => {
+      const rect = card.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `translateY(-7px) rotateX(${(-y * 2).toFixed(2)}deg) rotateY(${(x * 2).toFixed(2)}deg)`;
+    });
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "";
+    });
+  });
+}
