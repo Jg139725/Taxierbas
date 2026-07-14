@@ -31,3 +31,21 @@ WICHTIG VOR DER OFFIZIELLEN VERÖFFENTLICHUNG:
 
 UPLOAD:
 Den gesamten Inhalt dieses Ordners in das GitHub-Repository hochladen und vorhandene Dateien ersetzen.
+
+
+PREMIUM-ERWEITERUNGEN IN DIESEM PAKET:
+- neue Flughafen- und Ferntransfer-Sektion
+- grafisches Einsatzgebiet
+- Kundenbewertungen als klar gekennzeichnete Platzhalter
+- FAQ-Akkordeon
+- Allgäu-/Berg-Elemente im Hero
+- zusätzliche Animationen und Parallax-Effekt
+- WhatsApp-Schaltfläche vorbereitet
+- hochwertigere Karten und visuelle Elemente
+
+WHATSAPP AKTIVIEREN:
+In assets/js/config.js bei whatsapp die Nummer ohne + und Leerzeichen eintragen.
+Beispiel: whatsapp: "4916012345678"
+
+WICHTIG:
+Die Bewertungen sind nur Platzhalter und dürfen nicht als echte Kundenstimmen veröffentlicht werden.

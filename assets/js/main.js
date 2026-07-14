@@ -47,4 +47,32 @@
     window.location.href = `mailto:fahrdienst-erbas@hotmail.com?subject=${encodeURIComponent("Fahrtanfrage über die Webseite")}&body=${encodeURIComponent(body)}`;
     if (status) status.textContent = "Die Anfrage wurde in Ihrem E-Mail-Programm vorbereitet. Bitte dort noch absenden.";
   });
+
+  document.querySelectorAll(".faq-item button").forEach(button => {
+    button.addEventListener("click", () => {
+      const item = button.closest(".faq-item");
+      const open = item.classList.toggle("open");
+      button.setAttribute("aria-expanded", String(open));
+      button.querySelector("span").textContent = open ? "−" : "+";
+    });
+  });
+
+  const wa = document.querySelector(".js-whatsapp");
+  const waNumber = window.TAXI_ERBAS?.whatsapp || "";
+  if (wa) {
+    if (waNumber) {
+      wa.href = `https://wa.me/${waNumber}?text=${encodeURIComponent("Guten Tag, ich möchte eine Fahrt bei Taxi Erbas anfragen.")}`;
+      wa.target = "_blank";
+      wa.rel = "noopener";
+    } else {
+      wa.style.display = "none";
+    }
+  }
+
+  const visual = document.querySelector(".premium-visual");
+  window.addEventListener("scroll", () => {
+    if (!visual || window.innerWidth < 900) return;
+    const y = Math.min(window.scrollY * 0.05, 24);
+    visual.style.transform = `translateY(${y}px)`;
+  }, {passive:true});
 })();
