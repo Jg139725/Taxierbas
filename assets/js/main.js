@@ -156,3 +156,19 @@ if (hoursCard && statusText && statusSubtext) {
     statusSubtext.textContent = isOpen ? "Telefonische Anfrage möglich" : "Bitte nächste bestätigte Zeit beachten";
   }
 }
+
+const closeBrandMenu = () => {
+  const mobileNav = document.querySelector(".brand-mobile-nav");
+  const menuButton = document.querySelector(".brand-menu");
+  mobileNav?.classList.remove("open");
+  menuButton?.classList.remove("active");
+  menuButton?.setAttribute("aria-expanded","false");
+};
+
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 900) closeBrandMenu();
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeBrandMenu();
+});

@@ -1247,3 +1247,496 @@ footer{padding:70px 0 24px;background:#07080b;color:#fff}.footer-grid{display:gr
   .review-note{align-items:flex-start;flex-direction:column}
   .hours-list>div{font-size:13px}
 }
+
+/* PAKET 4 – MOBILE DESIGN & VISUELLER FEINSCHLIFF */
+:root{
+  --section-space:96px;
+  --section-space-mobile:66px;
+  --card-radius:22px
+}
+body{
+  overflow-x:hidden
+}
+img,svg{
+  max-width:100%
+}
+.section{
+  padding:var(--section-space) 0
+}
+.heading{
+  margin-bottom:38px
+}
+.heading h2{
+  max-width:780px
+}
+.heading>p{
+  max-width:560px
+}
+.brand-header{
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px)
+}
+.brand-header-inner{
+  min-height:78px
+}
+.brand-logo-image{
+  width:196px
+}
+.brand-nav{
+  gap:24px
+}
+.brand-nav a{
+  padding:28px 0;
+  font-size:11px;
+  letter-spacing:.015em
+}
+.brand-phone{
+  min-width:155px;
+  border-radius:12px
+}
+.hero-final{
+  min-height:700px
+}
+.hero-layout-final{
+  padding:84px 0 118px;
+  gap:58px
+}
+.hero-copy .intro{
+  max-width:610px;
+  font-size:17px;
+  line-height:1.75
+}
+.hero h1{
+  font-size:clamp(46px,5.6vw,72px)
+}
+.hero-trust{
+  gap:9px
+}
+.hero-trust div{
+  min-height:70px;
+  padding:13px
+}
+.hero-scene{
+  min-height:455px;
+  border-radius:30px
+}
+.scene-card{
+  border-radius:12px
+}
+.quickbar{
+  padding-top:16px
+}
+.quickgrid{
+  gap:12px
+}
+.quickgrid a{
+  min-height:92px;
+  align-content:center;
+  border-radius:16px;
+  transition:transform .22s,box-shadow .22s
+}
+.quickgrid a:hover{
+  transform:translateY(-4px);
+  box-shadow:0 18px 36px rgba(9,11,16,.08)
+}
+.service-grid-v2{
+  gap:16px
+}
+.service-v2{
+  min-height:370px;
+  border-radius:22px
+}
+.service-v2 h3{
+  font-size:22px
+}
+.transfer-v2-grid,.medical-grid,.area-grid,.faq-grid,.opening-grid{
+  gap:58px
+}
+.transfer-v2-visual{
+  min-height:500px;
+  border-radius:28px
+}
+.medical-visual,.region-map{
+  border-radius:28px
+}
+.gallery-grid{
+  gap:14px
+}
+.gallery-item{
+  border-radius:20px
+}
+.gallery-caption{
+  padding:36px 18px 17px
+}
+.review-card-v3,.hours-card,.booking-form,.contact-final-card,.contact-map-card{
+  border-radius:22px
+}
+.process-grid,.hint-grid{
+  gap:14px
+}
+.process-card,.hint-grid article{
+  border-radius:20px
+}
+.booking-grid{
+  gap:54px
+}
+.cta-inner{
+  border-radius:24px
+}
+.hero-mobile-actions{
+  display:none
+}
+
+/* Tablet */
+@media(max-width:1100px){
+  .container{
+    width:min(100% - 34px,1180px)
+  }
+  .brand-nav{
+    gap:16px
+  }
+  .brand-logo-image{
+    width:180px
+  }
+  .hero-layout-final{
+    gap:38px
+  }
+  .service-grid-v2{
+    grid-template-columns:repeat(2,1fr)
+  }
+  .gallery-grid{
+    grid-template-columns:repeat(2,1fr)
+  }
+  .review-grid-v3{
+    grid-template-columns:repeat(2,1fr)
+  }
+}
+
+/* Mobile Navigation + Layout */
+@media(max-width:900px){
+  .brand-header-inner{
+    min-height:68px
+  }
+  .brand-logo-image{
+    width:164px
+  }
+  .brand-menu{
+    display:block;
+    width:44px;
+    height:44px;
+    border-radius:11px
+  }
+  .brand-mobile-nav{
+    padding:8px 16px 18px;
+    box-shadow:0 16px 30px rgba(0,0,0,.24)
+  }
+  .brand-mobile-nav a{
+    padding:14px 4px;
+    font-size:14px
+  }
+  .hero-layout-final{
+    grid-template-columns:1fr;
+    padding:56px 0 102px
+  }
+  .hero-copy{
+    max-width:720px
+  }
+  .hero-scene{
+    max-width:680px;
+    width:100%;
+    margin:auto;
+    min-height:430px
+  }
+  .quickgrid{
+    grid-template-columns:1fr 1fr
+  }
+  .quickgrid a:nth-child(3){
+    grid-column:1/-1
+  }
+  .trust-facts{
+    grid-template-columns:1fr
+  }
+  .service-grid-v2{
+    grid-template-columns:1fr 1fr
+  }
+  .review-grid-v3{
+    grid-template-columns:1fr 1fr
+  }
+  .trust-chip-grid{
+    grid-template-columns:1fr 1fr
+  }
+}
+
+/* Small Mobile */
+@media(max-width:640px){
+  :root{
+    --section-space-mobile:60px
+  }
+  .container{
+    width:min(100% - 22px,1180px)
+  }
+  .section{
+    padding:var(--section-space-mobile) 0
+  }
+  .heading{
+    margin-bottom:28px
+  }
+  .heading h2,.section h2,.cta h2{
+    font-size:34px;
+    line-height:1.08
+  }
+  .heading>p{
+    font-size:14px
+  }
+  .brand-header-inner{
+    min-height:64px
+  }
+  .brand-logo-image{
+    width:148px
+  }
+  .brand-topline{
+    height:3px
+  }
+  .hero-final{
+    min-height:auto
+  }
+  .hero-layout-final{
+    padding:42px 0 88px
+  }
+  .hero-status{
+    font-size:10px;
+    padding:7px 10px
+  }
+  .hero h1{
+    font-size:41px;
+    line-height:1.03
+  }
+  .hero-copy .intro{
+    margin:22px 0 25px;
+    font-size:15px;
+    line-height:1.68
+  }
+  .hero-copy .actions{
+    display:none
+  }
+  .hero-mobile-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:24px
+  }
+  .hero-mobile-actions a{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:0 9px;
+    align-items:center;
+    padding:13px 12px;
+    border-radius:14px;
+    background:#fff;
+    color:#111;
+    box-shadow:0 12px 28px rgba(0,0,0,.18)
+  }
+  .hero-mobile-actions a:first-child{
+    background:var(--yellow)
+  }
+  .hero-mobile-actions span{
+    grid-row:1/3;
+    font-size:18px
+  }
+  .hero-mobile-actions strong,.hero-mobile-actions small{
+    display:block
+  }
+  .hero-mobile-actions strong{
+    font-size:12px
+  }
+  .hero-mobile-actions small{
+    font-size:9px;
+    opacity:.68
+  }
+  .hero-trust{
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-top:26px
+  }
+  .hero-trust div{
+    min-height:auto;
+    padding:12px 13px
+  }
+  .hero-scene{
+    min-height:330px;
+    border-radius:22px
+  }
+  .scene-taxi{
+    width:90%;
+    bottom:45px
+  }
+  .scene-card-top{
+    right:12px;
+    top:12px
+  }
+  .scene-card-bottom{
+    left:12px;
+    bottom:12px
+  }
+  .hero-signature{
+    font-size:11px
+  }
+  .quickbar{
+    padding-top:10px
+  }
+  .quickgrid{
+    grid-template-columns:1fr;
+    gap:9px
+  }
+  .quickgrid a:nth-child(3){
+    grid-column:auto
+  }
+  .quickgrid a{
+    min-height:76px;
+    padding:16px
+  }
+  .service-grid-v2,.review-grid-v3{
+    grid-template-columns:1fr
+  }
+  .service-v2{
+    min-height:auto;
+    padding:22px 22px 68px
+  }
+  .service-v2 h3{
+    font-size:21px
+  }
+  .service-v2 p{
+    font-size:13px
+  }
+  .service-info-strip{
+    padding:16px;
+    border-radius:0 14px 14px 0
+  }
+  .transfer-v2-grid,.medical-grid,.area-grid,.faq-grid,.opening-grid,.booking-grid{
+    gap:36px
+  }
+  .transfer-v2-visual{
+    min-height:430px;
+    padding:18px;
+    border-radius:22px
+  }
+  .transfer-v2-point span{
+    width:42px;
+    height:42px
+  }
+  .transfer-v2-destinations{
+    margin-top:28px
+  }
+  .transfer-v2-destinations article{
+    padding:12px
+  }
+  .medical-visual{
+    min-height:300px;
+    border-radius:22px
+  }
+  .medical-cross{
+    width:60px;
+    height:60px;
+    font-size:34px;
+    right:20px;
+    top:20px
+  }
+  .facts{
+    grid-template-columns:1fr
+  }
+  .road-card{
+    border-radius:22px
+  }
+  .fleet-grid{
+    grid-template-columns:1fr
+  }
+  .gallery-grid{
+    grid-template-columns:1fr;
+    grid-auto-rows:220px
+  }
+  .gallery-large,.gallery-wide{
+    grid-column:auto;
+    grid-row:auto
+  }
+  .gallery-item{
+    min-height:220px
+  }
+  .trust-summary{
+    gap:12px
+  }
+  .trust-score{
+    padding:22px
+  }
+  .review-card-v3{
+    padding:22px
+  }
+  .opening-grid{
+    gap:30px
+  }
+  .hours-card{
+    padding:22px
+  }
+  .hours-card-head span{
+    font-size:19px
+  }
+  .hours-list>div{
+    align-items:flex-start
+  }
+  .hours-list strong{
+    max-width:50%
+  }
+  .process-grid,.hint-grid,.trust-chip-grid{
+    grid-template-columns:1fr
+  }
+  .process-card,.hint-grid article{
+    padding:21px
+  }
+  .booking-form{
+    padding:18px
+  }
+  .form-row{
+    grid-template-columns:1fr
+  }
+  .booking-form input,.booking-form select,.booking-form textarea{
+    padding:13px
+  }
+  .cta{
+    padding:54px 0
+  }
+  .cta-inner{
+    padding:24px;
+    border-radius:20px
+  }
+  footer{
+    padding-top:54px
+  }
+  .footer-grid{
+    grid-template-columns:1fr;
+    gap:28px
+  }
+  .mobile-callbar{
+    padding:max(8px,env(safe-area-inset-bottom)) 8px 8px
+  }
+}
+
+/* Very small phones */
+@media(max-width:390px){
+  .brand-logo-image{
+    width:136px
+  }
+  .hero h1{
+    font-size:37px
+  }
+  .hero-mobile-actions{
+    grid-template-columns:1fr
+  }
+  .heading h2,.section h2,.cta h2{
+    font-size:31px
+  }
+  .scene-card{
+    padding:10px 12px
+  }
+  .scene-card strong{
+    font-size:12px
+  }
+}
