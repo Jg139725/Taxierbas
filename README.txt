@@ -1,21 +1,33 @@
-TAXI ERBAS – DEMO-WEBSEITE
-===========================
+TAXI ERBAS – AUSBAUPAKET
+=========================
 
-1. Den kompletten Inhalt dieses Ordners zu GitHub hochladen.
-2. Die Startseite ist index.html.
-3. Unternehmensdaten in assets/js/config.js eintragen.
-4. Impressum und Datenschutz vor Veröffentlichung vollständig ergänzen.
-5. Leistungen, 24/7-Angabe, Einsatzgebiet und Krankenfahrten erst nach Bestätigung veröffentlichen.
+BESTÄTIGTE / MEHRFACH GEFUNDENE DATEN:
+- Taxi Erbas
+- Bahnhofplatz 2a, 86825 Bad Wörishofen
+- Telefon: 08247 7585
+- E-Mail: fahrdienst-erbas@hotmail.com
 
-WICHTIG:
-Online-Verzeichnisse nennen unterschiedliche Adressen und Telefonnummern für Taxi Erbas.
-Deshalb wurden absichtlich keine möglicherweise falschen Kontaktdaten fest eingebaut.
+DATEIEN:
+- index.html: neue Startseite
+- fuhrpark.html: neutrale Fuhrparkseite
+- kontakt.html: Kontakt und Routenlink
+- impressum.html / datenschutz.html: noch unvollständige rechtliche Entwürfe
+- assets/css/style.css: komplettes Design
+- assets/js/main.js: Menü, Animationen und E-Mail-Fahrtanfrage
+- assets/js/config.js: zentrale Kontaktdaten
 
-FORMULAR:
-- Sobald in config.js eine WhatsApp-Nummer eingetragen wird, öffnet das Formular WhatsApp.
-- Alternativ kann eine E-Mail-Adresse eingetragen werden.
-- Ohne Kontaktdaten bleibt das Formular im Demo-Modus.
+WICHTIG VOR DER OFFIZIELLEN VERÖFFENTLICHUNG:
+1. Vollständigen Inhabernamen und Rechtsform erfragen.
+2. Leistungen bestätigen lassen, besonders:
+   - Krankenfahrten
+   - Großraumfahrten
+   - Kurierfahrten
+   - Rollstuhl-/Tragestuhlfahrten
+3. Aktuelle Fahrzeugtypen, Sitzplätze und echte Fotos erfragen.
+4. Öffnungszeiten beziehungsweise 24-Stunden-Erreichbarkeit bestätigen.
+5. Impressum und Datenschutz rechtlich vervollständigen.
+6. Logo und Bildrechte schriftlich klären.
+7. Optional Google Fonts lokal speichern.
 
-BILDER:
-Die Seite verwendet zunächst eine selbst gestaltete Taxi-Grafik aus CSS und keine fremden Fotos.
-Dadurch gibt es keine Probleme mit Bildrechten und keine kaputten externen Bildlinks.
+UPLOAD:
+Den gesamten Inhalt dieses Ordners in das GitHub-Repository hochladen und vorhandene Dateien ersetzen.

@@ -1,62 +1,50 @@
 (() => {
-  const config = window.TAXI_CONFIG || {};
-  const menuButton = document.querySelector(".menu-button");
-  const nav = document.querySelector(".main-nav");
-
-  menuButton?.addEventListener("click", () => {
+  const menu = document.querySelector(".menu");
+  const nav = document.querySelector(".nav nav");
+  menu?.addEventListener("click", () => {
     const open = nav.classList.toggle("open");
-    menuButton.setAttribute("aria-expanded", String(open));
+    menu.setAttribute("aria-expanded", String(open));
   });
+  nav?.querySelectorAll("a").forEach(a => a.addEventListener("click", () => nav.classList.remove("open")));
+  const year = document.getElementById("year");
+  if (year) year.textContent = new Date().getFullYear();
 
-  nav?.querySelectorAll("a").forEach(link => link.addEventListener("click", () => {
-    nav.classList.remove("open");
-    menuButton?.setAttribute("aria-expanded", "false");
-  }));
-
-  document.querySelectorAll(".js-phone-text").forEach(el => {
-    el.textContent = config.phoneDisplay || "Wird ergänzt";
-  });
-
-  document.querySelectorAll(".js-phone-link").forEach(el => {
-    if (config.phoneLink) {
-      el.href = `tel:${config.phoneLink}`;
-    } else {
-      el.href = "#kontakt";
-      el.addEventListener("click", event => {
-        if (el.getAttribute("href") === "#kontakt") return;
-        event.preventDefault();
-      });
-    }
-  });
-
-  document.getElementById("year").textContent = new Date().getFullYear();
+  const observer = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {threshold: .12}) : null;
+  document.querySelectorAll(".reveal").forEach(el => observer ? observer.observe(el) : el.classList.add("visible"));
 
   const form = document.getElementById("booking-form");
   const status = document.getElementById("form-status");
-
-  form?.addEventListener("submit", event => {
-    event.preventDefault();
-    const data = new FormData(form);
-    const message = [
-      `Neue Fahrtanfrage für ${config.company || "Taxi Erbas"}`,
+  form?.addEventListener("submit", e => {
+    e.preventDefault();
+    const d = new FormData(form);
+    const body = [
+      "Guten Tag Taxi Erbas,",
       "",
-      `Name: ${data.get("name")}`,
-      `Telefon: ${data.get("phone")}`,
-      `Abholort: ${data.get("pickup")}`,
-      `Ziel: ${data.get("destination")}`,
-      `Datum: ${data.get("date")}`,
-      `Uhrzeit: ${data.get("time")}`,
-      `Weitere Angaben: ${data.get("message") || "-"}`
+      "ich möchte folgende Fahrt anfragen:",
+      "",
+      `Name: ${d.get("name")}`,
+      `Telefon: ${d.get("phone")}`,
+      `Abholort: ${d.get("pickup")}`,
+      `Ziel: ${d.get("destination")}`,
+      `Datum: ${d.get("date")}`,
+      `Uhrzeit: ${d.get("time")}`,
+      `Personen: ${d.get("passengers")}`,
+      `Fahrtart: ${d.get("type")}`,
+      `Zusätzliche Angaben: ${d.get("message") || "-"}`,
+      "",
+      "Bitte bestätigen Sie mir, ob die Fahrt möglich ist.",
+      "",
+      "Freundliche Grüße",
+      d.get("name")
     ].join("\n");
-
-    if (config.whatsapp) {
-      window.open(`https://wa.me/${config.whatsapp}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
-      status.textContent = "Die Anfrage wurde für WhatsApp vorbereitet. Bitte dort noch absenden.";
-    } else if (config.email) {
-      window.location.href = `mailto:${config.email}?subject=${encodeURIComponent("Fahrtanfrage")}&body=${encodeURIComponent(message)}`;
-      status.textContent = "Die Anfrage wurde in Ihrem E-Mail-Programm vorbereitet.";
-    } else {
-      status.textContent = "Das Formular ist im Demo-Modus. Nach Eintragung von WhatsApp oder E-Mail kann die Anfrage versendet werden.";
-    }
+    window.location.href = `mailto:fahrdienst-erbas@hotmail.com?subject=${encodeURIComponent("Fahrtanfrage über die Webseite")}&body=${encodeURIComponent(body)}`;
+    if (status) status.textContent = "Die Anfrage wurde in Ihrem E-Mail-Programm vorbereitet. Bitte dort noch absenden.";
   });
 })();
