@@ -121,3 +121,38 @@ if (window.matchMedia("(pointer:fine)").matches) {
     });
   });
 }
+
+const hoursCard = document.querySelector(".live-status-card");
+const statusText = document.getElementById("live-status-text");
+const statusSubtext = document.getElementById("live-status-subtext");
+const hoursRows = document.querySelectorAll("#hours-list [data-day]");
+
+if (hoursRows.length) {
+  const today = new Date().getDay();
+  hoursRows.forEach(row => {
+    row.classList.toggle("today", Number(row.dataset.day) === today);
+  });
+}
+
+const confirmedHours = window.TAXI_ERBAS?.openingHours || null;
+if (hoursCard && statusText && statusSubtext) {
+  if (!confirmedHours) {
+    hoursCard.classList.remove("open", "closed");
+    statusText.textContent = "Zeiten werden geprüft";
+    statusSubtext.textContent = "Noch keine bestätigten Öffnungszeiten hinterlegt";
+  } else {
+    const now = new Date();
+    const day = now.getDay();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const ranges = confirmedHours[day] || [];
+    const isOpen = ranges.some(range => {
+      const [sh, sm] = range.start.split(":").map(Number);
+      const [eh, em] = range.end.split(":").map(Number);
+      return currentMinutes >= sh * 60 + sm && currentMinutes < eh * 60 + em;
+    });
+    hoursCard.classList.toggle("open", isOpen);
+    hoursCard.classList.toggle("closed", !isOpen);
+    statusText.textContent = isOpen ? "Jetzt erreichbar" : "Aktuell geschlossen";
+    statusSubtext.textContent = isOpen ? "Telefonische Anfrage möglich" : "Bitte nächste bestätigte Zeit beachten";
+  }
+}
