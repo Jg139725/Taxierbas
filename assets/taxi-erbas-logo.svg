@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" role="img" aria-labelledby="title desc">
+<title id="title">Taxi Erbas</title>
+<desc id="desc">Wortmarke Taxi Erbas Bad Wörishofen mit stilisierter Fahrbahn</desc>
+<rect width="520" height="120" rx="18" fill="#0b0d12"/>
+<path d="M20 88 H150" stroke="#f5c400" stroke-width="8" stroke-linecap="round"/>
+<path d="M49 88 H82 M100 88 H132" stroke="#0b0d12" stroke-width="3" stroke-linecap="round"/>
+<path d="M28 70 L48 43 H111 L137 70" fill="none" stroke="#ffffff" stroke-width="7" stroke-linejoin="round"/>
+<path d="M58 43 L70 27 H100 L112 43" fill="none" stroke="#f5c400" stroke-width="7" stroke-linejoin="round"/>
+<circle cx="53" cy="72" r="10" fill="#ffffff"/>
+<circle cx="116" cy="72" r="10" fill="#ffffff"/>
+<text x="175" y="58" font-family="Arial,Helvetica,sans-serif" font-size="38" font-weight="800" fill="#ffffff">TAXI ERBAS</text>
+<text x="177" y="85" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" letter-spacing="4" fill="#f5c400">BAD WÖRISHOFEN</text>
+</svg>
