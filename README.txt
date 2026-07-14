@@ -49,3 +49,13 @@ Beispiel: whatsapp: "4916012345678"
 
 WICHTIG:
 Die Bewertungen sind nur Platzhalter und dürfen nicht als echte Kundenstimmen veröffentlicht werden.
+
+
+HEADER-REDESIGN:
+- komplett neue, eigenständige Taxi-Navigation
+- rundes TE-Monogramm statt gelbem Kasten
+- dezente Telefonnummer als Premium-Pill
+- gelbe Hover-Linie statt klassischem Button-Look
+- Header wird beim Scrollen kompakter
+- neues mobiles Vollbreiten-Menü
+- deutlich andere Gestaltung als die SVK-Webseite

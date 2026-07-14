@@ -1,4 +1,27 @@
 (() => {
+
+  const taxiHeader = document.querySelector(".taxi-header");
+  const taxiMenu = document.querySelector(".taxi-menu");
+  const taxiMobilePanel = document.querySelector(".taxi-mobile-panel");
+
+  taxiMenu?.addEventListener("click", () => {
+    const open = taxiMobilePanel?.classList.toggle("open");
+    taxiMenu.classList.toggle("active", Boolean(open));
+    taxiMenu.setAttribute("aria-expanded", String(Boolean(open)));
+  });
+
+  taxiMobilePanel?.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", () => {
+      taxiMobilePanel.classList.remove("open");
+      taxiMenu?.classList.remove("active");
+      taxiMenu?.setAttribute("aria-expanded", "false");
+    });
+  });
+
+  const updateTaxiHeader = () => taxiHeader?.classList.toggle("scrolled", window.scrollY > 35);
+  updateTaxiHeader();
+  window.addEventListener("scroll", updateTaxiHeader, {passive:true});
+
   const menu = document.querySelector(".menu");
   const nav = document.querySelector(".nav nav");
   menu?.addEventListener("click", () => {

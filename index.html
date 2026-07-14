@@ -11,15 +11,46 @@
   <script defer src="assets/js/config.js"></script><script defer src="assets/js/main.js"></script>
 </head>
 <body>
-<header class="header">
-  <div class="container nav">
-    <a class="logo" href="index.html"><span class="logo-box">TE</span><span><b>Taxi Erbas</b><small>Bad Wörishofen</small></span></a>
-    <button class="menu" aria-label="Menü öffnen" aria-expanded="false"><i></i><i></i><i></i></button>
-    <nav>
-      <a href="#leistungen">Leistungen</a><a href="#transfer">Transfer</a><a href="fuhrpark.html">Fuhrpark</a><a href="#bewertungen">Bewertungen</a>
-      <a href="#anfrage">Fahrt anfragen</a><a href="kontakt.html">Kontakt</a>
-      <a class="call" href="tel:+4982477585">08247 7585</a>
+<header class="header taxi-header">
+  <div class="container taxi-nav">
+    <a class="taxi-brand" href="index.html" aria-label="Taxi Erbas Startseite">
+      <span class="taxi-brand-symbol"><i></i><b>TE</b></span>
+      <span class="taxi-brand-copy">
+        <strong>Taxi Erbas</strong>
+        <small>Bad Wörishofen</small>
+      </span>
+    </a>
+
+    <nav class="taxi-mainnav" aria-label="Hauptnavigation">
+      <a href="#leistungen">Leistungen</a>
+      <a href="#transfer">Transfer</a>
+      <a href="fuhrpark.html">Fuhrpark</a>
+      <a href="#bewertungen">Bewertungen</a>
+      <a href="#anfrage">Fahrt anfragen</a>
+      <a href="kontakt.html">Kontakt</a>
     </nav>
+
+    <div class="taxi-header-actions">
+      <a class="taxi-phone" href="tel:+4982477585">
+        <span class="taxi-phone-icon">☎</span>
+        <span><small>Direkt anrufen</small><strong>08247 7585</strong></span>
+      </a>
+      <button class="taxi-menu" type="button" aria-label="Menü öffnen" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="taxi-mobile-panel">
+    <nav aria-label="Mobile Navigation">
+      <a href="#leistungen"><span>01</span>Leistungen</a>
+      <a href="#transfer"><span>02</span>Transfer</a>
+      <a href="fuhrpark.html"><span>03</span>Fuhrpark</a>
+      <a href="#bewertungen"><span>04</span>Bewertungen</a>
+      <a href="#anfrage"><span>05</span>Fahrt anfragen</a>
+      <a href="kontakt.html"><span>06</span>Kontakt</a>
+    </nav>
+    <a class="taxi-mobile-call" href="tel:+4982477585">Jetzt anrufen · 08247 7585</a>
   </div>
 </header>
 
