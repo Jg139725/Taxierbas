@@ -51,11 +51,10 @@ WICHTIG:
 Die Bewertungen sind nur Platzhalter und dürfen nicht als echte Kundenstimmen veröffentlicht werden.
 
 
-HEADER-REDESIGN:
-- komplett neue, eigenständige Taxi-Navigation
-- rundes TE-Monogramm statt gelbem Kasten
-- dezente Telefonnummer als Premium-Pill
-- gelbe Hover-Linie statt klassischem Button-Look
-- Header wird beim Scrollen kompakter
-- neues mobiles Vollbreiten-Menü
-- deutlich andere Gestaltung als die SVK-Webseite
+HEADER V2:
+- klar sichtbarer Markenbereich links
+- gelbe Akzentlinie statt Logo-Kasten
+- strukturierte Navigation mit echten Abständen
+- sichtbarer Telefon-Button
+- eigenständiger Look ohne SVK-Anmutung
+- sauberes mobiles Menü

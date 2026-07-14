@@ -1,26 +1,17 @@
 (() => {
 
-  const taxiHeader = document.querySelector(".taxi-header");
-  const taxiMenu = document.querySelector(".taxi-menu");
-  const taxiMobilePanel = document.querySelector(".taxi-mobile-panel");
-
-  taxiMenu?.addEventListener("click", () => {
-    const open = taxiMobilePanel?.classList.toggle("open");
-    taxiMenu.classList.toggle("active", Boolean(open));
-    taxiMenu.setAttribute("aria-expanded", String(Boolean(open)));
+  const brandMenu = document.querySelector(".brand-menu");
+  const brandMobileNav = document.querySelector(".brand-mobile-nav");
+  brandMenu?.addEventListener("click", () => {
+    const open = brandMobileNav?.classList.toggle("open");
+    brandMenu.classList.toggle("active", Boolean(open));
+    brandMenu.setAttribute("aria-expanded", String(Boolean(open)));
   });
-
-  taxiMobilePanel?.querySelectorAll("a").forEach(link => {
-    link.addEventListener("click", () => {
-      taxiMobilePanel.classList.remove("open");
-      taxiMenu?.classList.remove("active");
-      taxiMenu?.setAttribute("aria-expanded", "false");
-    });
-  });
-
-  const updateTaxiHeader = () => taxiHeader?.classList.toggle("scrolled", window.scrollY > 35);
-  updateTaxiHeader();
-  window.addEventListener("scroll", updateTaxiHeader, {passive:true});
+  brandMobileNav?.querySelectorAll("a").forEach(link => link.addEventListener("click", () => {
+    brandMobileNav.classList.remove("open");
+    brandMenu?.classList.remove("active");
+    brandMenu?.setAttribute("aria-expanded", "false");
+  }));
 
   const menu = document.querySelector(".menu");
   const nav = document.querySelector(".nav nav");
