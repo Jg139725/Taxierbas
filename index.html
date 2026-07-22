@@ -79,9 +79,9 @@
     </div>
 
     <div class="home-fleet-bottom">
-      <div class="home-fleet-stat"><strong><span class="fleet-counter" data-counter="3">0</span></strong><span>Taxis</span></div>
-      <div class="home-fleet-stat"><strong><span class="fleet-counter" data-counter="8">0</span></strong><span>Rollstuhlumbauten</span></div>
-      <div class="home-fleet-stat"><strong><span class="fleet-counter" data-counter="5">0</span></strong><span>Kleinbusse</span></div>
+      <div class="home-fleet-stat"><strong>3</strong><span>Taxis</span></div>
+      <div class="home-fleet-stat"><strong>8</strong><span>Rollstuhlumbauten</span></div>
+      <div class="home-fleet-stat"><strong>5</strong><span>Kleinbusse</span></div>
       <a class="btn primary" href="fuhrpark.html">Alle Fahrzeuge ansehen</a>
     </div>
   </div>
@@ -173,59 +173,4 @@
 <footer><div class="container footer-grid"><div><strong>Taxi & Mietwagen Zentrale Erbas</strong><p>Professionelle Personenbeförderung in Bad Wörishofen.</p></div><div><a href="tel:+4982477585">08247 7585</a><a href="mailto:fahrdienst-erbas@hotmail.com">fahrdienst-erbas@hotmail.com</a></div><div><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></div></div><div class="container copyright">© <span id="year"></span> Taxi & Mietwagen Zentrale Erbas</div></footer>
 <div class="mobile-bar"><a href="tel:+4982477585">Anrufen</a><a href="#kontakt">Anfragen</a></div>
 <script src="assets/js/main.js"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const counters = document.querySelectorAll(".fleet-counter");
-  if (!counters.length) return;
-
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  function animateCounter(counter) {
-    if (counter.dataset.animated === "true") return;
-    counter.dataset.animated = "true";
-
-    const target = Number(counter.dataset.counter || 0);
-
-    if (reduceMotion) {
-      counter.textContent = target;
-      return;
-    }
-
-    const duration = 1200;
-    const start = performance.now();
-
-    function frame(now) {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      counter.textContent = Math.floor(target * eased);
-
-      if (progress < 1) {
-        requestAnimationFrame(frame);
-      } else {
-        counter.textContent = target;
-      }
-    }
-
-    requestAnimationFrame(frame);
-  }
-
-  const section = document.querySelector("#fuhrpark, .fleet-preview, .fleet-showcase, .home-fleet");
-
-  if ("IntersectionObserver" in window && section) {
-    const observer = new IntersectionObserver(function (entries, obs) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        counters.forEach(animateCounter);
-        obs.unobserve(entry.target);
-      });
-    }, { threshold: 0.35 });
-
-    observer.observe(section);
-  } else {
-    counters.forEach(animateCounter);
-  }
-});
-</script>
-
 </body></html>
