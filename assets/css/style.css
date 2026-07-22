@@ -373,3 +373,105 @@
     justify-content:center;
   }
 }
+
+
+/* Paket 8 V3 – Original-Logo und feste Bewertungen */
+.site-logo img,
+.logo img,
+.brand img,
+.header-logo img{
+  display:block;
+  width:auto;
+  height:64px;
+  max-width:240px;
+  object-fit:contain;
+}
+.google-review-card{
+  height:390px;
+  min-height:390px;
+  max-height:390px;
+  overflow:hidden;
+}
+.google-review-card p{
+  display:-webkit-box;
+  flex:0 0 auto;
+  height:165px;
+  min-height:165px;
+  max-height:165px;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:6;
+  line-clamp:6;
+}
+.google-review-card-head{
+  flex:0 0 auto;
+  min-height:48px;
+}
+.google-card-stars{
+  flex:0 0 auto;
+}
+.google-review-tag{
+  margin-top:auto;
+  flex:0 0 auto;
+}
+.google-reviews-footer{
+  min-height:48px;
+}
+.google-review-dots{
+  width:132px;
+  min-width:132px;
+  max-width:132px;
+  height:12px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  flex:0 0 132px;
+  overflow:hidden;
+}
+.google-review-dots button{
+  flex:0 0 9px;
+}
+.google-review-dots button.is-active{
+  flex-basis:28px;
+}
+@media(max-width:900px){
+  .site-logo img,
+  .logo img,
+  .brand img,
+  .header-logo img{
+    height:54px;
+    max-width:205px;
+  }
+}
+@media(max-width:760px){
+  .google-review-card{
+    height:405px;
+    min-height:405px;
+    max-height:405px;
+  }
+  .google-review-card p{
+    height:180px;
+    min-height:180px;
+    max-height:180px;
+    -webkit-line-clamp:7;
+    line-clamp:7;
+  }
+  .google-reviews-footer{
+    width:100%;
+  }
+  .google-review-dots{
+    width:132px;
+    min-width:132px;
+    max-width:132px;
+  }
+}
+@media(max-width:520px){
+  .site-logo img,
+  .logo img,
+  .brand img,
+  .header-logo img{
+    height:46px;
+    max-width:175px;
+  }
+}

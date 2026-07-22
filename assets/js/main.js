@@ -156,13 +156,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function buildDots(){
     dotsWrap.innerHTML="";
-    for(let i=0;i<=maxIndex();i++){
+    const dotCount = window.innerWidth<=760 ? cards.length : Math.max(1, maxIndex()+1);
+    for(let i=0;i<dotCount;i++){
       const dot=document.createElement("button");
       dot.type="button";
       dot.setAttribute("aria-label","Bewertungsgruppe "+(i+1));
-      dot.addEventListener("click",()=>{show(i);restart()});
+      dot.addEventListener("click",()=>{
+        if(window.innerWidth<=760){
+          cards[i]?.scrollIntoView({behavior:"smooth",inline:"start",block:"nearest"});
+        }else{
+          show(i);
+        }
+        restart();
+      });
       dotsWrap.appendChild(dot);
     }
+  }
   }
 
   function show(nextIndex){
@@ -206,4 +215,36 @@ document.addEventListener("DOMContentLoaded", () => {
   buildDots();
   show(0);
   restart();
+})();
+
+
+/* Paket 8 V3 – feste mobile Bewertungspunkte */
+(function(){
+  const section=document.querySelector(".google-reviews-section");
+  if(!section) return;
+  const viewport=section.querySelector(".google-review-viewport");
+  const cards=[...section.querySelectorAll(".google-review-card")];
+  const dotsWrap=section.querySelector(".google-review-dots");
+  if(!viewport || !cards.length || !dotsWrap) return;
+
+  let scrollTimer;
+  viewport.addEventListener("scroll",()=>{
+    if(window.innerWidth>760) return;
+    clearTimeout(scrollTimer);
+    scrollTimer=setTimeout(()=>{
+      const left=viewport.scrollLeft;
+      let nearest=0;
+      let smallest=Infinity;
+      cards.forEach((card,i)=>{
+        const distance=Math.abs(card.offsetLeft-left);
+        if(distance<smallest){
+          smallest=distance;
+          nearest=i;
+        }
+      });
+      [...dotsWrap.children].forEach((dot,i)=>{
+        dot.classList.toggle("is-active",i===nearest);
+      });
+    },80);
+  },{passive:true});
 })();
