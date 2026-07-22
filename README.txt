@@ -1,1 +1,21 @@
-ZIP entpacken, alle Dateien in das GitHub-Repository hochladen und vorhandene Dateien ersetzen. Die Fahrzeugbilder werden aktuell direkt von der freigegebenen Wix-Seite geladen.
+PAKET 4 – PREMIUM FUHRPARK
+
+EMPFEHLUNG:
+Nicht alles auf der Startseite.
+
+✔ Moderne Vorschau auf der Startseite
+✔ Eigene Unterseite 'fuhrpark.html'
+
+Warum?
+- Mehr Platz für große Fahrzeugbilder
+- Professioneller Eindruck
+- Bessere Auffindbarkeit bei Google
+- Später leicht erweiterbar (jedes Fahrzeug einzeln)
+
+Nächster Ausbau:
+- Originalfotos
+- Technische Daten
+- Sitzplätze
+- Rollstuhlsymbol
+- Gepäckkapazität
+- Anfrage-Buttons
