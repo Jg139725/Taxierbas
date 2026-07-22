@@ -3,3 +3,68 @@
 
 /* Paket 3 – Weitere Fahrdienste */
 .extra-services{position:relative;overflow:hidden;background:radial-gradient(circle at 90% 15%,rgba(246,199,0,.16),transparent 28%),linear-gradient(135deg,#0b0e13 0%,#111722 55%,#17140a 100%);color:#fff}.extra-head>p{color:#b7bec8}.extra-service-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.extra-card{position:relative;overflow:hidden;min-height:570px;padding:36px;border:1px solid rgba(255,255,255,.11);border-radius:28px;background:rgba(255,255,255,.065);box-shadow:0 26px 70px rgba(0,0,0,.25);backdrop-filter:blur(12px)}.prestige-card{background:linear-gradient(145deg,rgba(246,199,0,.98),rgba(216,169,0,.94));color:#111}.extra-number{position:absolute;right:28px;top:18px;font-size:76px;line-height:1;font-weight:900;color:rgba(255,255,255,.08)}.prestige-card .extra-number{color:rgba(0,0,0,.08)}.service-label{display:inline-flex;padding:8px 11px;border-radius:999px;background:rgba(246,199,0,.14);color:var(--yellow);text-transform:uppercase;letter-spacing:.12em;font-size:10px;font-weight:900}.prestige-card .service-label{background:rgba(0,0,0,.1);color:#111}.extra-card h3{max-width:530px;margin:24px 0 18px;font-size:clamp(30px,4vw,48px);line-height:1.05}.extra-card>p{max-width:570px;color:#b9c0ca}.prestige-card>p{color:rgba(0,0,0,.68)}.route-list{display:grid;gap:9px;margin:28px 0}.route-list div{display:flex;justify-content:space-between;gap:18px;padding:14px 16px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.055)}.route-list span{color:#bec5ce;text-align:right}.premium-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0;margin:28px 0;list-style:none}.premium-list li{padding:13px 14px;border-radius:13px;background:rgba(0,0,0,.09);font-weight:800;font-size:13px}.extra-action{display:inline-flex;margin-top:12px;font-weight:900;border-bottom:2px solid currentColor}.prestige-actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.prestige-phone{font-weight:900}.extra-note{display:flex;justify-content:space-between;gap:25px;align-items:center;margin-top:22px;padding:22px 26px;border-radius:20px;background:#fff;color:#111}.extra-note span{color:#717780;font-size:13px}.extra-note strong{text-align:right;font-size:18px}@media(max-width:900px){.extra-service-grid{grid-template-columns:1fr}.extra-card{min-height:auto}}@media(max-width:600px){.extra-card{padding:25px 20px;border-radius:22px}.extra-card h3{font-size:34px}.premium-list{grid-template-columns:1fr}.route-list div{display:grid;gap:2px}.route-list span{text-align:left}.extra-note{display:block;padding:20px}.extra-note strong{display:block;text-align:left;margin-top:6px}}
+
+
+/* Paket 3 V2 – dritter Zusatzdienst RunningCars */
+.extra-service-grid.three-services{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.three-services .extra-card{
+  min-height:620px;
+}
+.running-card{
+  background:linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.045));
+}
+.running-card:after{
+  background:rgba(255,255,255,.09);
+}
+.running-list{
+  display:grid;
+  gap:10px;
+  padding:0;
+  margin:28px 0;
+  list-style:none;
+}
+.running-list li{
+  position:relative;
+  padding:13px 14px 13px 38px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:13px;
+  background:rgba(255,255,255,.055);
+  color:#d3d8df;
+  font-size:13px;
+  font-weight:800;
+}
+.running-list li:before{
+  content:"✓";
+  position:absolute;
+  left:14px;
+  color:var(--yellow);
+  font-weight:900;
+}
+@media(max-width:1100px){
+  .extra-service-grid.three-services{
+    grid-template-columns:1fr 1fr;
+  }
+  .running-card{
+    grid-column:1/-1;
+    min-height:auto;
+  }
+  .running-list{
+    grid-template-columns:1fr 1fr;
+  }
+}
+@media(max-width:760px){
+  .extra-service-grid.three-services{
+    grid-template-columns:1fr;
+  }
+  .running-card{
+    grid-column:auto;
+  }
+  .three-services .extra-card{
+    min-height:auto;
+  }
+  .running-list{
+    grid-template-columns:1fr;
+  }
+}
