@@ -126,52 +126,84 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-/* Paket 8 – Bewertungs-Karussell */
+
+
+/* Paket 8 V2 – Google-Bewertungs-Slider */
 (function(){
-  const section=document.getElementById("bewertungen");
+  const section=document.querySelector(".google-reviews-section");
   if(!section) return;
 
-  const cards=[...section.querySelectorAll(".review-card")];
-  const dots=[...section.querySelectorAll(".review-dots button")];
-  const prev=section.querySelector(".review-prev");
-  const next=section.querySelector(".review-next");
-  let current=0;
+  const viewport=section.querySelector(".google-review-viewport");
+  const track=section.querySelector(".google-review-track");
+  const cards=[...section.querySelectorAll(".google-review-card")];
+  const dotsWrap=section.querySelector(".google-review-dots");
+  const prev=section.querySelector(".google-review-prev");
+  const next=section.querySelector(".google-review-next");
+
+  let index=0;
+  let visible=3;
   let timer;
 
-  function show(index){
-    current=(index+cards.length)%cards.length;
-    cards.forEach((card,i)=>card.classList.toggle("is-active",i===current));
-    dots.forEach((dot,i)=>dot.classList.toggle("is-active",i===current));
+  function getVisible(){
+    if(window.innerWidth<=760) return 1;
+    if(window.innerWidth<=1050) return 2;
+    return 3;
+  }
+
+  function maxIndex(){
+    return Math.max(0,cards.length-visible);
+  }
+
+  function buildDots(){
+    dotsWrap.innerHTML="";
+    for(let i=0;i<=maxIndex();i++){
+      const dot=document.createElement("button");
+      dot.type="button";
+      dot.setAttribute("aria-label","Bewertungsgruppe "+(i+1));
+      dot.addEventListener("click",()=>{show(i);restart()});
+      dotsWrap.appendChild(dot);
+    }
+  }
+
+  function show(nextIndex){
+    visible=getVisible();
+    index=Math.max(0,Math.min(nextIndex,maxIndex()));
+
+    if(window.innerWidth>760){
+      const cardWidth=cards[0].getBoundingClientRect().width;
+      const gap=20;
+      track.style.transform=`translateX(-${index*(cardWidth+gap)}px)`;
+    }
+
+    [...dotsWrap.children].forEach((dot,i)=>{
+      dot.classList.toggle("is-active",i===index);
+    });
   }
 
   function restart(){
     clearInterval(timer);
-    if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-      timer=setInterval(()=>show(current+1),6500);
+    if(window.innerWidth>760 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      timer=setInterval(()=>{
+        show(index>=maxIndex()?0:index+1);
+      },6500);
     }
   }
 
-  prev?.addEventListener("click",()=>{show(current-1);restart()});
-  next?.addEventListener("click",()=>{show(current+1);restart()});
-  dots.forEach((dot,i)=>dot.addEventListener("click",()=>{show(i);restart()}));
+  prev?.addEventListener("click",()=>{show(index-1);restart()});
+  next?.addEventListener("click",()=>{show(index>=maxIndex()?0:index+1);restart()});
 
   section.addEventListener("mouseenter",()=>clearInterval(timer));
   section.addEventListener("mouseleave",restart);
 
-  if("IntersectionObserver" in window){
-    const observer=new IntersectionObserver(entries=>{
-      entries.forEach(entry=>{
-        if(entry.isIntersecting){
-          section.classList.add("stars-visible");
-          observer.unobserve(section);
-        }
-      });
-    },{threshold:.25});
-    observer.observe(section);
-  }else{
-    section.classList.add("stars-visible");
-  }
+  window.addEventListener("resize",()=>{
+    visible=getVisible();
+    buildDots();
+    show(Math.min(index,maxIndex()));
+    restart();
+  });
 
+  visible=getVisible();
+  buildDots();
   show(0);
   restart();
 })();
