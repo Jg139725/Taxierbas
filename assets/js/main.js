@@ -128,123 +128,110 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-/* Paket 8 V2 – Google-Bewertungs-Slider */
+
+
+/* Paket 8 V4 – klassischer Seiten-Slider */
 (function(){
-  const section=document.querySelector(".google-reviews-section");
+  const section = document.querySelector(".google-reviews-section");
   if(!section) return;
 
-  const viewport=section.querySelector(".google-review-viewport");
-  const track=section.querySelector(".google-review-track");
-  const cards=[...section.querySelectorAll(".google-review-card")];
-  const dotsWrap=section.querySelector(".google-review-dots");
-  const prev=section.querySelector(".google-review-prev");
-  const next=section.querySelector(".google-review-next");
+  const viewport = section.querySelector(".google-review-viewport");
+  const track = section.querySelector(".google-review-track");
+  const cards = [...section.querySelectorAll(".google-review-card")];
+  const dotsWrap = section.querySelector(".google-review-dots");
+  const prev = section.querySelector(".google-review-prev");
+  const next = section.querySelector(".google-review-next");
 
-  let index=0;
-  let visible=3;
-  let timer;
+  if(!viewport || !track || !cards.length || !dotsWrap) return;
 
-  function getVisible(){
-    if(window.innerWidth<=760) return 1;
-    if(window.innerWidth<=1050) return 2;
+  let page = 0;
+  let cardsPerPage = 3;
+  let autoTimer;
+
+  function perPage(){
+    if(window.innerWidth <= 760) return 1;
+    if(window.innerWidth <= 1050) return 2;
     return 3;
   }
 
-  function maxIndex(){
-    return Math.max(0,cards.length-visible);
+  function pageCount(){
+    return Math.ceil(cards.length / cardsPerPage);
   }
 
   function buildDots(){
-    dotsWrap.innerHTML="";
-    const dotCount = window.innerWidth<=760 ? cards.length : Math.max(1, maxIndex()+1);
-    for(let i=0;i<dotCount;i++){
-      const dot=document.createElement("button");
-      dot.type="button";
-      dot.setAttribute("aria-label","Bewertungsgruppe "+(i+1));
-      dot.addEventListener("click",()=>{
-        if(window.innerWidth<=760){
-          cards[i]?.scrollIntoView({behavior:"smooth",inline:"start",block:"nearest"});
-        }else{
-          show(i);
-        }
-        restart();
+    dotsWrap.innerHTML = "";
+    for(let i = 0; i < pageCount(); i++){
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.setAttribute("aria-label", "Bewertungsseite " + (i + 1));
+      dot.addEventListener("click", function(){
+        showPage(i);
+        restartAuto();
       });
       dotsWrap.appendChild(dot);
     }
   }
-  }
 
-  function show(nextIndex){
-    visible=getVisible();
-    index=Math.max(0,Math.min(nextIndex,maxIndex()));
-
-    if(window.innerWidth>760){
-      const cardWidth=cards[0].getBoundingClientRect().width;
-      const gap=20;
-      track.style.transform=`translateX(-${index*(cardWidth+gap)}px)`;
-    }
-
-    [...dotsWrap.children].forEach((dot,i)=>{
-      dot.classList.toggle("is-active",i===index);
+  function updateDots(){
+    [...dotsWrap.children].forEach((dot, i) => {
+      dot.classList.toggle("is-active", i === page);
     });
   }
 
-  function restart(){
-    clearInterval(timer);
-    if(window.innerWidth>760 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-      timer=setInterval(()=>{
-        show(index>=maxIndex()?0:index+1);
-      },6500);
+  function showPage(nextPage){
+    const totalPages = pageCount();
+    page = (nextPage + totalPages) % totalPages;
+
+    const firstCardIndex = page * cardsPerPage;
+    const firstCard = cards[firstCardIndex];
+    if(!firstCard) return;
+
+    const offset = firstCard.offsetLeft;
+    track.style.transform = `translateX(-${offset}px)`;
+    updateDots();
+  }
+
+  function restartAuto(){
+    clearInterval(autoTimer);
+    if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      autoTimer = setInterval(function(){
+        showPage(page + 1);
+      }, 7000);
     }
   }
 
-  prev?.addEventListener("click",()=>{show(index-1);restart()});
-  next?.addEventListener("click",()=>{show(index>=maxIndex()?0:index+1);restart()});
-
-  section.addEventListener("mouseenter",()=>clearInterval(timer));
-  section.addEventListener("mouseleave",restart);
-
-  window.addEventListener("resize",()=>{
-    visible=getVisible();
-    buildDots();
-    show(Math.min(index,maxIndex()));
-    restart();
+  prev?.addEventListener("click", function(){
+    showPage(page - 1);
+    restartAuto();
   });
 
-  visible=getVisible();
+  next?.addEventListener("click", function(){
+    showPage(page + 1);
+    restartAuto();
+  });
+
+  section.addEventListener("mouseenter", function(){
+    clearInterval(autoTimer);
+  });
+
+  section.addEventListener("mouseleave", restartAuto);
+
+  window.addEventListener("resize", function(){
+    const oldPerPage = cardsPerPage;
+    cardsPerPage = perPage();
+
+    if(oldPerPage !== cardsPerPage){
+      page = 0;
+      buildDots();
+    }
+
+    requestAnimationFrame(function(){
+      showPage(page);
+    });
+  });
+
+  cardsPerPage = perPage();
   buildDots();
-  show(0);
-  restart();
-})();
-
-
-/* Paket 8 V3 – feste mobile Bewertungspunkte */
-(function(){
-  const section=document.querySelector(".google-reviews-section");
-  if(!section) return;
-  const viewport=section.querySelector(".google-review-viewport");
-  const cards=[...section.querySelectorAll(".google-review-card")];
-  const dotsWrap=section.querySelector(".google-review-dots");
-  if(!viewport || !cards.length || !dotsWrap) return;
-
-  let scrollTimer;
-  viewport.addEventListener("scroll",()=>{
-    if(window.innerWidth>760) return;
-    clearTimeout(scrollTimer);
-    scrollTimer=setTimeout(()=>{
-      const left=viewport.scrollLeft;
-      let nearest=0;
-      let smallest=Infinity;
-      cards.forEach((card,i)=>{
-        const distance=Math.abs(card.offsetLeft-left);
-        if(distance<smallest){
-          smallest=distance;
-          nearest=i;
-        }
-      });
-      [...dotsWrap.children].forEach((dot,i)=>{
-        dot.classList.toggle("is-active",i===nearest);
-      });
-    },80);
-  },{passive:true});
+  showPage(0);
+  restartAuto();
 })();
