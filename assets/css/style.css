@@ -761,3 +761,55 @@ body.lightbox-open{overflow:hidden}
   .fleet-premium-card{flex-basis:94%}
   .fleet-specs{grid-template-columns:1fr}
 }
+
+
+/* Paket 9.1 – einheitliche Kopfzeile auf der Fuhrpark-Seite */
+.site-header .brand{
+  display:flex;
+  align-items:center;
+  flex:0 0 auto;
+  min-width:0;
+  text-decoration:none;
+}
+.site-header .brand img{
+  display:block;
+  width:auto;
+  height:42px;
+  max-width:170px;
+  object-fit:contain;
+  object-position:left center;
+}
+.main-nav a[aria-current="page"]{
+  color:var(--yellow, #f7c400);
+}
+@media(max-width:900px){
+  .site-header .nav-wrap{
+    min-height:72px;
+  }
+  .site-header .brand img{
+    height:36px;
+    max-width:145px;
+  }
+  .site-header .menu-toggle{
+    position:relative;
+    z-index:1002;
+    flex:0 0 auto;
+  }
+}
+@media(max-width:520px){
+  .site-header .nav-wrap{
+    min-height:64px;
+    gap:12px;
+  }
+  .site-header .brand img{
+    height:31px;
+    max-width:124px;
+  }
+  .site-header .menu-toggle{
+    width:44px;
+    height:44px;
+    display:grid;
+    place-items:center;
+    padding:0;
+  }
+}
