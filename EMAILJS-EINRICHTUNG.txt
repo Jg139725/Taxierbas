@@ -1,0 +1,71 @@
+TAXI ERBAS – EMAILJS EINRICHTUNG
+
+Dieses Paket enthält bereits den vollständigen echten E-Mail-Versand.
+Damit der Versand über dein persönliches EmailJS-Konto funktioniert,
+müssen drei Werte eingesetzt werden.
+
+EMPFÄNGER:
+fahrdienst-erbas@hotmail.com
+
+1. Bei EmailJS anmelden oder kostenlos registrieren.
+
+2. Unter „Email Services“ das E-Mail-Konto verbinden.
+   Danach die SERVICE ID kopieren.
+
+3. Unter „Email Templates“ ein Template erstellen.
+   Empfänger/To Email:
+   fahrdienst-erbas@hotmail.com
+
+   Betreff:
+   Neue Fahrtanfrage von {{customer_name}}
+
+4. Für den E-Mail-Inhalt kannst du diesen Text verwenden:
+
+NEUE FAHRTANFRAGE ÜBER DIE WEBSITE
+
+KUNDENDATEN
+Name: {{customer_name}}
+Telefon: {{customer_phone}}
+E-Mail: {{customer_email}}
+
+FAHRT
+Abholort: {{pickup}}
+Zielort: {{destination}}
+Datum: {{ride_date}}
+Uhrzeit: {{ride_time}}
+
+ZUSÄTZLICHE ANGABEN
+Personen: {{passengers}}
+Gepäck: {{luggage}}
+Fahrtart: {{ride_types}}
+
+NACHRICHT
+{{message}}
+
+5. TEMPLATE ID kopieren.
+
+6. Unter „Account“ den PUBLIC KEY kopieren.
+
+7. Diese Datei öffnen:
+   assets/js/emailjs-config.js
+
+8. Die drei Platzhalter ersetzen:
+
+publicKey: "HIER_PUBLIC_KEY_EINTRAGEN",
+serviceId: "HIER_SERVICE_ID_EINTRAGEN",
+templateId: "HIER_TEMPLATE_ID_EINTRAGEN"
+
+Beispiel:
+publicKey: "AbCdEf123",
+serviceId: "service_x123abc",
+templateId: "template_y456def"
+
+9. Datei speichern und in GitHub hochladen.
+
+10. Auf der Website eine Testanfrage senden und im EmailJS-Dashboard
+    sowie im Posteingang von fahrdienst-erbas@hotmail.com prüfen.
+
+WICHTIG:
+- Niemals den EmailJS Private Key in die Website eintragen.
+- Der Public Key darf laut EmailJS für die Browser-Integration verwendet werden.
+- Eine Anfrage ist erst verbindlich, wenn Taxi Erbas sie persönlich bestätigt.

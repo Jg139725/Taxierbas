@@ -288,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 
 
-/* Paket 10.1 – Anfrageformular, Schritte und Validierung */
+/* Paket 10.2 – Anfrageformular mit echtem EmailJS-Versand */
 (function(){
   const form = document.getElementById("booking-form");
   if(!form) return;
@@ -301,6 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const submit = form.querySelector(".booking-submit");
   const status = form.querySelector(".booking-status");
   let current = 0;
+  let sending = false;
 
   const today = new Date();
   const dateInput = form.querySelector('input[name="ride_date"]');
@@ -320,6 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
     back.hidden = current===0;
     next.hidden = current===steps.length-1;
     submit.hidden = current!==steps.length-1;
+    status.className = "booking-status";
     status.textContent = "";
     steps[current].querySelector("input,select,textarea")?.focus({preventScroll:true});
   }
@@ -368,6 +370,51 @@ document.addEventListener("DOMContentLoaded", () => {
     return valid;
   }
 
+  function emailJsConfigured(){
+    const cfg = window.TAXI_ERBAS_EMAILJS;
+    return Boolean(
+      cfg &&
+      cfg.publicKey &&
+      cfg.serviceId &&
+      cfg.templateId &&
+      !cfg.publicKey.includes("HIER_") &&
+      !cfg.serviceId.includes("HIER_") &&
+      !cfg.templateId.includes("HIER_")
+    );
+  }
+
+  function prepareTemplateFields(){
+    const selectedTypes = [...form.querySelectorAll('input[name="ride_type"]:checked')]
+      .map(input=>input.value);
+
+    let hidden = form.querySelector('input[name="ride_types"]');
+    if(!hidden){
+      hidden = document.createElement("input");
+      hidden.type = "hidden";
+      hidden.name = "ride_types";
+      form.appendChild(hidden);
+    }
+    hidden.value = selectedTypes.length ? selectedTypes.join(", ") : "Keine besondere Auswahl";
+
+    let recipient = form.querySelector('input[name="recipient_email"]');
+    if(!recipient){
+      recipient = document.createElement("input");
+      recipient.type = "hidden";
+      recipient.name = "recipient_email";
+      form.appendChild(recipient);
+    }
+    recipient.value = "fahrdienst-erbas@hotmail.com";
+
+    let subject = form.querySelector('input[name="email_subject"]');
+    if(!subject){
+      subject = document.createElement("input");
+      subject.type = "hidden";
+      subject.name = "email_subject";
+      form.appendChild(subject);
+    }
+    subject.value = "Neue Fahrtanfrage über die Taxi-Erbas-Website";
+  }
+
   next.addEventListener("click",()=>{
     if(!validateStep(current)) return;
     current++;
@@ -375,6 +422,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   back.addEventListener("click",()=>{
+    if(sending) return;
     current--;
     update();
   });
@@ -386,31 +434,65 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  form.addEventListener("submit",(event)=>{
+  form.addEventListener("submit",async(event)=>{
     event.preventDefault();
-    if(!validateStep(current)) return;
+    if(sending || !validateStep(current)) return;
 
-    const data = new FormData(form);
-    const types = data.getAll("ride_type").join(", ") || "Keine besondere Auswahl";
+    if(!emailJsConfigured()){
+      status.className = "booking-status error";
+      status.innerHTML =
+        "<strong>EmailJS ist noch nicht verbunden.</strong><br>" +
+        "Trage Public Key, Service ID und Template ID in " +
+        "<code>assets/js/emailjs-config.js</code> ein.";
+      return;
+    }
 
-    status.innerHTML =
-      "<strong>Das Formular ist vollständig vorbereitet.</strong><br>" +
-      "Der echte Versand an fahrdienst-erbas@hotmail.com wird in Paket 10.2 aktiviert. " +
-      "Ihre Eingaben wurden noch nicht versendet.";
+    if(typeof window.emailjs==="undefined"){
+      status.className = "booking-status error";
+      status.textContent = "Der E-Mail-Dienst konnte nicht geladen werden. Bitte Internetverbindung prüfen und erneut versuchen.";
+      return;
+    }
 
-    console.info("Vorbereitete Fahrtanfrage",{
-      customer_name:data.get("customer_name"),
-      customer_phone:data.get("customer_phone"),
-      customer_email:data.get("customer_email"),
-      pickup:data.get("pickup"),
-      destination:data.get("destination"),
-      ride_date:data.get("ride_date"),
-      ride_time:data.get("ride_time"),
-      passengers:data.get("passengers"),
-      luggage:data.get("luggage"),
-      ride_type:types,
-      message:data.get("message")
-    });
+    prepareTemplateFields();
+
+    const cfg = window.TAXI_ERBAS_EMAILJS;
+    const originalText = submit.textContent;
+    sending = true;
+    submit.disabled = true;
+    back.disabled = true;
+    submit.textContent = "Anfrage wird gesendet …";
+    status.className = "booking-status sending";
+    status.textContent = "Bitte einen Moment warten.";
+
+    try{
+      await window.emailjs.sendForm(
+        cfg.serviceId,
+        cfg.templateId,
+        form,
+        {publicKey: cfg.publicKey}
+      );
+
+      status.className = "booking-status success";
+      status.innerHTML =
+        "<strong>Vielen Dank! Ihre Fahrtanfrage wurde erfolgreich gesendet.</strong><br>" +
+        "Taxi Erbas meldet sich zur Bestätigung persönlich bei Ihnen.";
+
+      form.reset();
+      current = 0;
+      setTimeout(update, 4500);
+    }catch(error){
+      console.error("EmailJS-Versandfehler:", error);
+      status.className = "booking-status error";
+      status.innerHTML =
+        "<strong>Die Anfrage konnte gerade nicht gesendet werden.</strong><br>" +
+        "Bitte versuchen Sie es erneut oder rufen Sie uns unter " +
+        "<a href=\"tel:+4982477585\">08247 7585</a> an.";
+    }finally{
+      sending = false;
+      submit.disabled = false;
+      back.disabled = false;
+      submit.textContent = originalText;
+    }
   });
 
   update();
