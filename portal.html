@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Taxi Erbas – Fahrerportal Demo</title>
+  <link rel="stylesheet" href="assets/css/portal.css">
+</head>
+<body>
+  <div class="portal-bg"></div>
+
+  <main class="portal-app">
+    <section class="login-screen" id="login-screen">
+      <div class="login-card">
+        <a class="back-link" href="index.html">← Zur Website</a>
+        <div class="brand-mark">TE</div>
+        <p class="eyebrow">Kostenlose Testversion</p>
+        <h1>Fahrer- & Disponentenportal</h1>
+        <p class="login-copy">Teste Fahrtenverwaltung und Fuhrparkstatus direkt im Browser. Es werden noch keine echten Mitarbeiterdaten übertragen.</p>
+
+        <form id="login-form">
+          <label>
+            <span>Benutzer</span>
+            <input id="login-user" type="text" autocomplete="username" placeholder="disponent" required>
+          </label>
+          <label>
+            <span>Passwort</span>
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="demo123" required>
+          </label>
+          <button type="submit">Demo öffnen</button>
+          <p class="login-error" id="login-error"></p>
+        </form>
+
+        <div class="demo-accounts">
+          <strong>Demo-Zugänge</strong>
+          <span>Disponent: <code>disponent</code> / <code>demo123</code></span>
+          <span>Fahrer: <code>fahrer</code> / <code>demo123</code></span>
+        </div>
+
+        <div class="demo-warning">
+          Nur zum Testen: Die Anmeldung ist nicht sicher und die Daten bleiben nur in diesem Browser gespeichert.
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard hidden" id="dashboard">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-mark small">TE</div>
+          <div><strong>Taxi Erbas</strong><span>Demo-Portal</span></div>
+        </div>
+
+        <nav>
+          <button class="nav-button active" data-view="overview">Übersicht</button>
+          <button class="nav-button" data-view="rides">Fahrten</button>
+          <button class="nav-button" data-view="fleet">Fuhrpark</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span id="role-label">Disponent</span>
+          <button id="reset-demo">Demo zurücksetzen</button>
+          <button id="logout-button">Abmelden</button>
+        </div>
+      </aside>
+
+      <div class="content">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobile-menu">☰</button>
+          <div>
+            <p class="eyebrow">Interner Bereich</p>
+            <h2 id="page-title">Übersicht</h2>
+          </div>
+          <div class="topbar-user">
+            <span class="status-dot"></span>
+            <div><strong id="user-name">Demo Disponent</strong><small>angemeldet</small></div>
+          </div>
+        </header>
+
+        <section class="view active" id="view-overview">
+          <div class="stat-grid">
+            <article><span>Heute</span><strong id="stat-today">0</strong><small>Fahrten</small></article>
+            <article><span>Offen</span><strong id="stat-open">0</strong><small>noch zu planen</small></article>
+            <article><span>Unterwegs</span><strong id="stat-active">0</strong><small>aktive Fahrten</small></article>
+            <article><span>Verfügbar</span><strong id="stat-available">0</strong><small>Fahrzeuge</small></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div><span>Nächste Einsätze</span><h3>Kommende Fahrten</h3></div>
+                <button class="primary small-button" data-open-ride>Neue Fahrt</button>
+              </div>
+              <div id="upcoming-rides" class="compact-list"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div><span>Aktueller Zustand</span><h3>Fahrzeugstatus</h3></div>
+              </div>
+              <div id="fleet-summary" class="compact-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-rides">
+          <div class="section-toolbar">
+            <div>
+              <p>Fahrten anlegen, Fahrer und Fahrzeug zuweisen sowie den Status ändern.</p>
+            </div>
+            <button class="primary" data-open-ride>+ Neue Fahrt</button>
+          </div>
+          <div id="rides-list" class="card-list"></div>
+        </section>
+
+        <section class="view" id="view-fleet">
+          <div class="section-toolbar">
+            <div>
+              <p>Standort, Tankstand, Sauberkeit und Verfügbarkeit der Fahrzeuge verwalten.</p>
+            </div>
+            <button class="primary" data-open-vehicle>+ Fahrzeug hinzufügen</button>
+          </div>
+          <div id="fleet-list" class="fleet-grid"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="ride-dialog">
+    <form method="dialog" id="ride-form" class="dialog-form">
+      <div class="dialog-head">
+        <div><span>Disposition</span><h3>Fahrt eintragen</h3></div>
+        <button class="icon-button" value="cancel" aria-label="Schließen">×</button>
+      </div>
+      <input type="hidden" name="id">
+      <div class="form-grid">
+        <label><span>Kunde</span><input name="customer" required placeholder="Max Mustermann"></label>
+        <label><span>Telefon</span><input name="phone" placeholder="0170 1234567"></label>
+        <label class="full"><span>Abholort</span><input name="pickup" required placeholder="Straße, Ort"></label>
+        <label class="full"><span>Zielort</span><input name="destination" required placeholder="Straße, Ort"></label>
+        <label><span>Datum</span><input name="date" type="date" required></label>
+        <label><span>Uhrzeit</span><input name="time" type="time" required></label>
+        <label><span>Fahrer</span><select name="driver"><option>Ali</option><option>Mehmet</option><option>Ayse</option><option>Noch offen</option></select></label>
+        <label><span>Fahrzeug</span><select name="vehicle" id="ride-vehicle-select"></select></label>
+        <label><span>Status</span><select name="status"><option>Offen</option><option>Zugewiesen</option><option>Unterwegs</option><option>Abgeschlossen</option></select></label>
+        <label><span>Fahrtart</span><select name="type"><option>Taxifahrt</option><option>Krankenfahrt</option><option>Flughafentransfer</option><option>Schülerfahrt</option></select></label>
+        <label class="full"><span>Hinweis</span><textarea name="note" rows="3" placeholder="Besondere Hinweise"></textarea></label>
+      </div>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary">Abbrechen</button>
+        <button type="submit" class="primary">Fahrt speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="vehicle-dialog">
+    <form method="dialog" id="vehicle-form" class="dialog-form">
+      <div class="dialog-head">
+        <div><span>Fuhrpark</span><h3>Fahrzeug verwalten</h3></div>
+        <button class="icon-button" value="cancel" aria-label="Schließen">×</button>
+      </div>
+      <input type="hidden" name="id">
+      <div class="form-grid">
+        <label><span>Fahrzeug</span><input name="name" required placeholder="Mercedes V-Klasse"></label>
+        <label><span>Kennzeichen</span><input name="plate" required placeholder="MN-TE 123"></label>
+        <label><span>Standort</span><input name="location" required placeholder="Betriebshof"></label>
+        <label><span>Status</span><select name="status"><option>Verfügbar</option><option>Unterwegs</option><option>Werkstatt</option><option>Nicht verfügbar</option></select></label>
+        <label><span>Tankstand</span><select name="fuel"><option>Voll</option><option>¾ voll</option><option>Halbvoll</option><option>¼ voll</option><option>Reserve</option></select></label>
+        <label><span>Sauberkeit</span><select name="cleanliness"><option>Sauber</option><option>Leicht verschmutzt</option><option>Reinigung erforderlich</option></select></label>
+        <label><span>Kilometerstand</span><input name="mileage" type="number" min="0" placeholder="84500"></label>
+        <label><span>Aktueller Fahrer</span><input name="driver" placeholder="z. B. Ali"></label>
+        <label class="full"><span>Notiz / Mangel</span><textarea name="note" rows="3" placeholder="Keine Schäden"></textarea></label>
+      </div>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary">Abbrechen</button>
+        <button type="submit" class="primary">Fahrzeug speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="assets/js/portal.js"></script>
+</body>
+</html>

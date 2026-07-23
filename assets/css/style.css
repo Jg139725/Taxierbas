@@ -1537,3 +1537,5 @@ body.lightbox-open{overflow:hidden}
   color:inherit;
   font-weight:850;
 }
+
+.internal-portal-link{display:block;margin:18px auto 0;text-align:center;color:rgba(255,255,255,.48);font-size:12px;text-decoration:none}.internal-portal-link:hover{color:#f7c400}
