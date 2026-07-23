@@ -813,3 +813,385 @@ body.lightbox-open{overflow:hidden}
     padding:0;
   }
 }
+
+
+/* Paket 9.2 – vollständige Handy-Optimierung der Fuhrpark-Seite */
+@media(max-width:760px){
+
+  html, body{
+    overflow-x:hidden;
+  }
+
+  .container{
+    width:min(100% - 28px, 1180px);
+  }
+
+  /* Kopfzeile */
+  .site-header{
+    position:sticky;
+    top:0;
+    z-index:1100;
+    backdrop-filter:blur(16px);
+  }
+
+  .site-header .nav-wrap{
+    min-height:66px;
+    padding-top:8px;
+    padding-bottom:8px;
+  }
+
+  .site-header .brand{
+    max-width:calc(100% - 60px);
+  }
+
+  .site-header .brand img{
+    width:auto;
+    height:30px;
+    max-width:118px;
+    object-fit:contain;
+  }
+
+  .site-header .menu-toggle{
+    width:44px;
+    height:44px;
+    min-width:44px;
+    border-radius:12px;
+    font-size:23px;
+  }
+
+  .main-nav{
+    top:66px;
+    left:14px;
+    right:14px;
+    width:auto;
+    max-height:calc(100vh - 86px);
+    overflow-y:auto;
+    border-radius:18px;
+  }
+
+  .main-nav a{
+    width:100%;
+    min-height:48px;
+    display:flex;
+    align-items:center;
+    padding:12px 16px;
+  }
+
+  .main-nav .nav-call{
+    justify-content:center;
+    margin-top:4px;
+  }
+
+  /* Hero und Einleitung */
+  .fleet-hero,
+  .subpage-hero{
+    min-height:auto;
+    padding-top:88px;
+    padding-bottom:62px;
+  }
+
+  .fleet-hero h1,
+  .subpage-hero h1{
+    max-width:100%;
+    font-size:clamp(38px,12vw,56px);
+    line-height:1.02;
+    word-break:normal;
+  }
+
+  .fleet-hero p,
+  .subpage-hero p{
+    max-width:100%;
+    font-size:16px;
+    line-height:1.65;
+  }
+
+  .fleet-anchor-nav{
+    position:relative;
+    top:auto;
+    padding:12px 0;
+    overflow-x:auto;
+    overscroll-behavior-inline:contain;
+    scrollbar-width:none;
+  }
+
+  .fleet-anchor-nav::-webkit-scrollbar{
+    display:none;
+  }
+
+  .fleet-anchor-nav .container,
+  .fleet-anchor-nav-inner{
+    width:max-content;
+    min-width:100%;
+    display:flex;
+    justify-content:flex-start;
+    gap:8px;
+    padding-right:14px;
+  }
+
+  .fleet-anchor-nav a{
+    flex:0 0 auto;
+    white-space:nowrap;
+    padding:10px 14px;
+    border-radius:999px;
+    font-size:13px;
+  }
+
+  /* Premium-Fuhrpark */
+  .fleet-showcase{
+    padding:70px 0 76px;
+  }
+
+  .fleet-showcase-head{
+    display:block;
+    margin-bottom:32px;
+  }
+
+  .fleet-showcase-head h2,
+  .fleet-quality-head h2{
+    font-size:clamp(34px,10vw,48px);
+    line-height:1.05;
+  }
+
+  .fleet-showcase-head>p{
+    margin-top:18px;
+    font-size:15px;
+    line-height:1.7;
+  }
+
+  .fleet-card-grid{
+    display:flex;
+    gap:14px;
+    margin-left:-14px;
+    margin-right:-14px;
+    padding:4px 14px 26px;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    scroll-padding-inline:14px;
+    overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+
+  .fleet-card-grid::-webkit-scrollbar{
+    display:none;
+  }
+
+  .fleet-premium-card{
+    flex:0 0 min(88vw, 355px);
+    min-width:0;
+    max-width:none;
+    scroll-snap-align:center;
+    border-radius:22px;
+    box-shadow:0 18px 50px rgba(17,23,34,.13);
+  }
+
+  .fleet-premium-card:hover{
+    transform:none;
+  }
+
+  .fleet-image-button{
+    height:220px;
+  }
+
+  .fleet-badge{
+    top:14px;
+    right:14px;
+    max-width:calc(100% - 28px);
+    padding:8px 11px;
+    font-size:10px;
+  }
+
+  .fleet-image-hint{
+    left:16px;
+    bottom:14px;
+    font-size:11px;
+  }
+
+  .fleet-card-body{
+    padding:22px 20px 21px;
+  }
+
+  .fleet-card-body h3{
+    font-size:24px;
+    line-height:1.15;
+  }
+
+  .fleet-card-body>p{
+    min-height:0;
+    margin-bottom:18px;
+    font-size:14px;
+    line-height:1.65;
+  }
+
+  .fleet-specs{
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-bottom:20px;
+  }
+
+  .fleet-specs span{
+    min-height:44px;
+    padding:9px 11px;
+    font-size:12px;
+  }
+
+  .fleet-request-btn{
+    min-height:48px;
+    padding-left:14px;
+    padding-right:14px;
+    font-size:14px;
+    text-align:center;
+  }
+
+  /* Qualitätsbereich */
+  .fleet-quality{
+    padding:74px 0;
+  }
+
+  .fleet-quality-head{
+    margin-bottom:30px;
+  }
+
+  .fleet-quality-head p{
+    font-size:15px;
+  }
+
+  .fleet-quality-grid{
+    grid-template-columns:1fr;
+    gap:14px;
+  }
+
+  .fleet-quality-grid article{
+    min-height:0;
+    padding:24px 22px;
+    border-radius:20px;
+  }
+
+  .fleet-quality-grid article>span{
+    top:16px;
+    right:18px;
+    font-size:30px;
+  }
+
+  .quality-icon{
+    width:48px;
+    height:48px;
+    margin-bottom:28px;
+    border-radius:14px;
+    font-size:22px;
+  }
+
+  .fleet-quality-grid h3{
+    font-size:21px;
+  }
+
+  .fleet-quality-grid p{
+    font-size:14px;
+  }
+
+  /* Bestehende ausführliche Fuhrpark-Bereiche */
+  .fleet-section,
+  .fleet-category,
+  .vehicle-section{
+    padding-top:68px;
+    padding-bottom:68px;
+  }
+
+  .fleet-grid,
+  .vehicle-grid{
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+
+  .fleet-item,
+  .vehicle-card{
+    border-radius:20px;
+  }
+
+  .fleet-item img,
+  .vehicle-card img{
+    height:auto;
+    min-height:220px;
+    max-height:300px;
+    object-fit:cover;
+  }
+
+  /* Lightbox */
+  .fleet-lightbox{
+    grid-template-columns:42px minmax(0,1fr) 42px;
+    gap:5px;
+    padding:72px 6px 22px;
+  }
+
+  .fleet-lightbox figure{
+    max-height:calc(100vh - 100px);
+    border-radius:18px;
+  }
+
+  .fleet-lightbox img{
+    max-height:72vh;
+  }
+
+  .fleet-lightbox figcaption{
+    padding:12px 14px;
+    font-size:13px;
+  }
+
+  .fleet-lightbox-close{
+    top:14px;
+    right:14px;
+    width:44px;
+    height:44px;
+    font-size:30px;
+  }
+
+  .fleet-lightbox-prev,
+  .fleet-lightbox-next{
+    width:40px;
+    height:40px;
+    font-size:29px;
+  }
+
+  /* Footer */
+  .site-footer .container,
+  .footer-grid{
+    grid-template-columns:1fr;
+  }
+
+  .site-footer{
+    padding-bottom:max(30px, env(safe-area-inset-bottom));
+  }
+}
+
+@media(max-width:390px){
+
+  .container{
+    width:min(100% - 22px, 1180px);
+  }
+
+  .site-header .brand img{
+    height:28px;
+    max-width:108px;
+  }
+
+  .fleet-premium-card{
+    flex-basis:calc(100vw - 36px);
+  }
+
+  .fleet-image-button{
+    height:205px;
+  }
+
+  .fleet-card-body{
+    padding:20px 18px;
+  }
+
+  .fleet-card-body h3{
+    font-size:22px;
+  }
+
+  .fleet-showcase-head h2,
+  .fleet-quality-head h2{
+    font-size:34px;
+  }
+}
