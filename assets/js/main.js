@@ -235,3 +235,54 @@ document.addEventListener("DOMContentLoaded", () => {
   showPage(0);
   restartAuto();
 })();
+
+
+/* Paket 9 – Fuhrpark-Lightbox */
+(function(){
+  const lightbox = document.querySelector(".fleet-lightbox");
+  const triggers = [...document.querySelectorAll(".fleet-image-button")];
+  if(!lightbox || !triggers.length) return;
+
+  const image = lightbox.querySelector("img");
+  const caption = lightbox.querySelector("figcaption");
+  const close = lightbox.querySelector(".fleet-lightbox-close");
+  const prev = lightbox.querySelector(".fleet-lightbox-prev");
+  const next = lightbox.querySelector(".fleet-lightbox-next");
+  let activeIndex = 0;
+
+  function show(index){
+    activeIndex = (index + triggers.length) % triggers.length;
+    const trigger = triggers[activeIndex];
+    image.src = trigger.dataset.lightboxSrc;
+    image.alt = trigger.dataset.lightboxAlt || "";
+    caption.textContent = trigger.dataset.lightboxAlt || "";
+    lightbox.hidden = false;
+    document.body.classList.add("lightbox-open");
+    close.focus();
+  }
+
+  function hide(){
+    lightbox.hidden = true;
+    document.body.classList.remove("lightbox-open");
+    triggers[activeIndex]?.focus();
+  }
+
+  triggers.forEach((trigger,index)=>{
+    trigger.addEventListener("click",()=>show(index));
+  });
+
+  close.addEventListener("click",hide);
+  prev.addEventListener("click",()=>show(activeIndex-1));
+  next.addEventListener("click",()=>show(activeIndex+1));
+
+  lightbox.addEventListener("click",(event)=>{
+    if(event.target===lightbox) hide();
+  });
+
+  document.addEventListener("keydown",(event)=>{
+    if(lightbox.hidden) return;
+    if(event.key==="Escape") hide();
+    if(event.key==="ArrowLeft") show(activeIndex-1);
+    if(event.key==="ArrowRight") show(activeIndex+1);
+  });
+})();

@@ -421,3 +421,343 @@
     max-width:128px;
   }
 }
+
+
+/* Paket 9 – Premium Fuhrpark 2.0 */
+.fleet-showcase{
+  padding:110px 0 120px;
+  background:linear-gradient(180deg,#f6f7f9 0%,#fff 100%);
+}
+.fleet-showcase-head{
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);
+  align-items:end;
+  gap:55px;
+  margin-bottom:48px;
+}
+.fleet-showcase-head h2,
+.fleet-quality-head h2{
+  margin:10px 0 0;
+  font-size:clamp(36px,5vw,66px);
+  line-height:1.02;
+}
+.fleet-showcase-head>p{
+  margin:0;
+  color:#666d76;
+  font-size:17px;
+  line-height:1.75;
+}
+.fleet-card-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:24px;
+}
+.fleet-premium-card{
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  border:1px solid rgba(17,23,34,.08);
+  border-radius:28px;
+  background:#fff;
+  box-shadow:0 24px 70px rgba(17,23,34,.10);
+  transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease;
+}
+.fleet-premium-card:hover{
+  transform:translateY(-9px);
+  border-color:rgba(247,196,0,.55);
+  box-shadow:0 34px 90px rgba(17,23,34,.17);
+}
+.fleet-image-button{
+  position:relative;
+  display:block;
+  width:100%;
+  height:275px;
+  padding:0;
+  overflow:hidden;
+  border:0;
+  background:#111722;
+  cursor:zoom-in;
+}
+.fleet-image-button::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,transparent 45%,rgba(5,8,13,.68) 100%);
+  pointer-events:none;
+}
+.fleet-image-button::before{
+  content:"";
+  position:absolute;
+  z-index:2;
+  top:-120%;
+  left:-40%;
+  width:42%;
+  height:300%;
+  transform:rotate(24deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.33),transparent);
+  transition:left .75s ease;
+  pointer-events:none;
+}
+.fleet-premium-card:hover .fleet-image-button::before{
+  left:125%;
+}
+.fleet-image-button img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transition:transform .7s cubic-bezier(.2,.7,.2,1);
+}
+.fleet-premium-card:hover .fleet-image-button img{
+  transform:scale(1.075);
+}
+.fleet-badge{
+  position:absolute;
+  z-index:3;
+  top:18px;
+  right:18px;
+  padding:9px 13px;
+  border-radius:999px;
+  background:#f7c400;
+  color:#111722;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+}
+.fleet-badge.accessible{background:#fff}
+.fleet-badge.group{background:#111722;color:#fff}
+.fleet-image-hint{
+  position:absolute;
+  z-index:3;
+  left:20px;
+  bottom:18px;
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+.fleet-card-body{
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  padding:28px;
+}
+.fleet-card-kicker{
+  color:#9b7a00;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.fleet-card-body h3{
+  margin:10px 0 12px;
+  color:#111722;
+  font-size:26px;
+  line-height:1.15;
+}
+.fleet-card-body>p{
+  min-height:82px;
+  margin:0 0 22px;
+  color:#646b74;
+  line-height:1.65;
+}
+.fleet-specs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:25px;
+}
+.fleet-specs span{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:48px;
+  padding:10px 11px;
+  border-radius:14px;
+  background:#f4f5f7;
+  color:#333a44;
+  font-size:12px;
+  font-weight:750;
+}
+.fleet-specs b{
+  width:24px;
+  color:#111722;
+  font-size:17px;
+  text-align:center;
+}
+.fleet-request-btn{
+  width:100%;
+  margin-top:auto;
+  justify-content:center;
+}
+.fleet-quality{
+  padding:115px 0;
+  background:#101722;
+  color:#fff;
+}
+.fleet-quality-head{
+  max-width:800px;
+  margin-bottom:44px;
+}
+.fleet-quality-head p{
+  max-width:680px;
+  color:rgba(255,255,255,.67);
+  font-size:17px;
+  line-height:1.7;
+}
+.fleet-quality-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:18px;
+}
+.fleet-quality-grid article{
+  position:relative;
+  overflow:hidden;
+  min-height:290px;
+  padding:29px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:24px;
+  background:rgba(255,255,255,.055);
+  backdrop-filter:blur(12px);
+  transition:transform .3s ease,border-color .3s ease,background .3s ease;
+}
+.fleet-quality-grid article:hover{
+  transform:translateY(-7px);
+  border-color:rgba(247,196,0,.65);
+  background:rgba(255,255,255,.09);
+}
+.fleet-quality-grid article>span{
+  position:absolute;
+  top:20px;
+  right:22px;
+  color:rgba(255,255,255,.22);
+  font-size:38px;
+  font-weight:900;
+}
+.quality-icon{
+  width:54px;
+  height:54px;
+  display:grid;
+  place-items:center;
+  margin-bottom:38px;
+  border-radius:16px;
+  background:#f7c400;
+  color:#111722;
+  font-size:25px;
+}
+.fleet-quality-grid h3{
+  margin:0 0 12px;
+  font-size:22px;
+}
+.fleet-quality-grid p{
+  margin:0;
+  color:rgba(255,255,255,.68);
+  line-height:1.65;
+}
+.fleet-lightbox[hidden]{display:none}
+.fleet-lightbox{
+  position:fixed;
+  z-index:9999;
+  inset:0;
+  display:grid;
+  grid-template-columns:70px minmax(0,1100px) 70px;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  padding:50px 24px;
+  background:rgba(4,7,12,.92);
+  backdrop-filter:blur(14px);
+}
+.fleet-lightbox figure{
+  margin:0;
+  max-height:calc(100vh - 100px);
+  overflow:hidden;
+  border-radius:24px;
+  background:#0e141e;
+  box-shadow:0 30px 100px rgba(0,0,0,.55);
+}
+.fleet-lightbox img{
+  display:block;
+  width:100%;
+  max-height:76vh;
+  object-fit:contain;
+  background:#080c12;
+}
+.fleet-lightbox figcaption{
+  padding:15px 20px;
+  color:#fff;
+  text-align:center;
+}
+.fleet-lightbox-close,
+.fleet-lightbox-prev,
+.fleet-lightbox-next{
+  border:0;
+  color:#fff;
+  cursor:pointer;
+}
+.fleet-lightbox-close{
+  position:absolute;
+  top:20px;
+  right:24px;
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  background:rgba(255,255,255,.12);
+  font-size:34px;
+}
+.fleet-lightbox-prev,
+.fleet-lightbox-next{
+  width:58px;
+  height:58px;
+  border-radius:50%;
+  background:#f7c400;
+  color:#111722;
+  font-size:40px;
+  line-height:1;
+}
+body.lightbox-open{overflow:hidden}
+@media(max-width:1050px){
+  .fleet-card-grid{grid-template-columns:1fr 1fr}
+  .fleet-premium-card:last-child{grid-column:1/-1;max-width:620px;justify-self:center}
+  .fleet-quality-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:760px){
+  .fleet-showcase{padding:78px 0 84px}
+  .fleet-showcase-head{display:block}
+  .fleet-showcase-head>p{margin-top:20px}
+  .fleet-card-grid{
+    display:flex;
+    gap:16px;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    padding:6px 4px 28px;
+    scrollbar-width:none;
+  }
+  .fleet-card-grid::-webkit-scrollbar{display:none}
+  .fleet-premium-card{
+    flex:0 0 88%;
+    scroll-snap-align:center;
+  }
+  .fleet-premium-card:last-child{max-width:none}
+  .fleet-image-button{height:235px}
+  .fleet-card-body{padding:23px}
+  .fleet-card-body>p{min-height:0}
+  .fleet-quality{padding:82px 0}
+  .fleet-quality-grid{grid-template-columns:1fr}
+  .fleet-quality-grid article{min-height:230px}
+  .fleet-lightbox{
+    grid-template-columns:44px minmax(0,1fr) 44px;
+    gap:7px;
+    padding:64px 8px 20px;
+  }
+  .fleet-lightbox-prev,.fleet-lightbox-next{
+    width:42px;height:42px;font-size:30px;
+  }
+}
+@media(max-width:480px){
+  .fleet-premium-card{flex-basis:94%}
+  .fleet-specs{grid-template-columns:1fr}
+}
