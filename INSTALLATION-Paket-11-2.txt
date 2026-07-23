@@ -1,0 +1,103 @@
+TAXI ERBAS – PAKET 11.2: SUPABASE LIVE-SYSTEM
+=================================================
+
+JA: Fahrzeuge können später jederzeit hinzugefügt, bearbeitet und entfernt werden.
+Du kannst am Samstag die echten Daten nachtragen.
+
+WICHTIG VOR DEM HOCHLADEN
+-------------------------
+Bitte zuerst Supabase vollständig einrichten.
+
+SCHRITT 1 – DATENBANK ANLEGEN
+------------------------------
+1. Öffne dein Supabase-Projekt.
+2. Links auf „SQL Editor“.
+3. Öffne die Datei „supabase-setup.sql“ aus diesem Paket.
+4. Kopiere den gesamten Inhalt in das große Feld.
+5. Klicke oben rechts auf „Run“.
+6. Unten sollte eine Erfolgsmeldung ohne roten Fehler erscheinen.
+
+SCHRITT 2 – ERSTEN BENUTZER ANLEGEN
+------------------------------------
+1. Links in Supabase auf „Authentication“.
+2. Dann „Users“.
+3. „Add user“ / „Create new user“.
+4. Deine E-Mail-Adresse und ein sicheres Passwort eintragen.
+5. „Auto Confirm User“ aktivieren, falls angezeigt.
+6. Benutzer erstellen.
+7. Die UUID/User-ID des Benutzers kopieren.
+
+SCHRITT 3 – DICH ZUM ADMIN MACHEN
+----------------------------------
+Im SQL Editor eine neue Query öffnen und ausführen:
+
+update public.profiles
+set full_name = 'Justin Grundei', role = 'admin'
+where id = 'HIER-DIE-USER-UUID-EINSETZEN';
+
+Die UUID muss zwischen den Anführungszeichen stehen.
+
+SCHRITT 4 – WEITERE MITARBEITER
+--------------------------------
+Jeden Fahrer/Disponenten unter Authentication > Users anlegen.
+Danach seine Rolle mit SQL setzen:
+
+DISPONENT:
+update public.profiles
+set full_name = 'Name des Disponenten', role = 'dispatcher'
+where id = 'USER-UUID';
+
+FAHRER:
+update public.profiles
+set full_name = 'Name des Fahrers', role = 'driver'
+where id = 'USER-UUID';
+
+SCHRITT 5 – WEBSITE HOCHLADEN
+------------------------------
+1. ZIP entpacken.
+2. Alle Dateien in dein GitHub-Repository „Taxierbas“ hochladen.
+3. Vorhandene Dateien ersetzen.
+4. Warten, bis GitHub Pages aktualisiert ist.
+5. Portal öffnen:
+   https://jg139725.github.io/Taxierbas/portal.html
+
+FUNKTIONEN
+----------
+ADMIN/DISPONENT:
+- alle Fahrten sehen
+- Fahrten hinzufügen, bearbeiten und löschen
+- Fahrer und Fahrzeug zuweisen
+- Fahrzeuge hinzufügen, bearbeiten und entfernen
+- Tank, Sauberkeit, Standort und Kilometerstand pflegen
+
+FAHRER:
+- nur die ihm zugewiesenen Fahrten sehen
+- Fahrtstatus ändern
+- Fahrzeugzustand aktualisieren
+- Änderungen werden live synchronisiert
+
+DATENSCHUTZ / TESTBETRIEB
+-------------------------
+Das System besitzt echtes Login und Row Level Security.
+Trotzdem bis Montag zuerst parallel zum bisherigen Ablauf testen.
+Keine Gesundheitsdiagnosen oder unnötigen medizinischen Details speichern.
+Bei Krankenfahrten nur die für die Durchführung zwingend notwendigen Angaben eintragen.
+
+FEHLERBEHEBUNG
+--------------
+„Mitarbeiterprofil konnte nicht geladen werden“:
+- Benutzer wurde angelegt, aber SQL-Skript eventuell vorher nicht ausgeführt.
+- SQL-Skript erneut vollständig ausführen.
+
+Fahrer sieht keine Fahrt:
+- Der richtige Fahrer muss bei der Fahrt ausgewählt sein.
+- Prüfen, ob der Fahrer mit genau diesem Benutzer angemeldet ist.
+
+Änderungen erscheinen nicht sofort:
+- Seite einmal neu laden.
+- In Supabase prüfen, ob Realtime für rides und vehicles aktiviert wurde.
+
+SICHERHEIT
+----------
+Der Publishable Key darf im Browser stehen.
+Niemals einen Secret Key oder service_role Key in GitHub einfügen.

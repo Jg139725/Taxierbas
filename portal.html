@@ -15,31 +15,31 @@
       <div class="login-card">
         <a class="back-link" href="index.html">← Zur Website</a>
         <div class="brand-mark">TE</div>
-        <p class="eyebrow">Kostenlose Testversion</p>
+        <p class="eyebrow">Live-Testversion</p>
         <h1>Fahrer- & Disponentenportal</h1>
         <p class="login-copy">Teste Fahrtenverwaltung und Fuhrparkstatus direkt im Browser. Es werden noch keine echten Mitarbeiterdaten übertragen.</p>
 
         <form id="login-form">
           <label>
             <span>Benutzer</span>
-            <input id="login-user" type="text" autocomplete="username" placeholder="disponent" required>
+            <input id="login-user" type="email" autocomplete="username" placeholder="name@taxi-erbas.de" required>
           </label>
           <label>
             <span>Passwort</span>
-            <input id="login-password" type="password" autocomplete="current-password" placeholder="demo123" required>
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="Passwort" required>
           </label>
           <button type="submit">Demo öffnen</button>
           <p class="login-error" id="login-error"></p>
         </form>
 
         <div class="demo-accounts">
-          <strong>Demo-Zugänge</strong>
-          <span>Disponent: <code>disponent</code> / <code>demo123</code></span>
-          <span>Fahrer: <code>fahrer</code> / <code>demo123</code></span>
+          <strong>Echter Mitarbeiterzugang</strong>
+          <span>Die Benutzer werden einmalig in Supabase angelegt.</span>
+          <span>Danach meldet sich jeder Fahrer mit seiner eigenen E-Mail-Adresse und seinem Passwort an.</span>
         </div>
 
         <div class="demo-warning">
-          Nur zum Testen: Die Anmeldung ist nicht sicher und die Daten bleiben nur in diesem Browser gespeichert.
+          Live-Version: Fahrten und Fahrzeuge werden zentral gespeichert und zwischen allen angemeldeten Geräten synchronisiert.
         </div>
       </div>
     </section>
@@ -48,7 +48,7 @@
       <aside class="sidebar">
         <div class="sidebar-brand">
           <div class="brand-mark small">TE</div>
-          <div><strong>Taxi Erbas</strong><span>Demo-Portal</span></div>
+          <div><strong>Taxi Erbas</strong><span>Live-Portal</span></div>
         </div>
 
         <nav>
@@ -59,7 +59,7 @@
 
         <div class="sidebar-footer">
           <span id="role-label">Disponent</span>
-          <button id="reset-demo">Demo zurücksetzen</button>
+          <button id="reset-demo">Daten neu laden</button>
           <button id="logout-button">Abmelden</button>
         </div>
       </aside>
@@ -73,7 +73,7 @@
           </div>
           <div class="topbar-user">
             <span class="status-dot"></span>
-            <div><strong id="user-name">Demo Disponent</strong><small>angemeldet</small></div>
+            <div><strong id="user-name">Mitarbeiter</strong><small>angemeldet</small></div>
           </div>
         </header>
 
@@ -178,6 +178,8 @@
     </form>
   </dialog>
 
-  <script src="assets/js/portal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/supabase-config.js"></script>
+  <script src="assets/js/portal-live.js"></script>
 </body>
 </html>
