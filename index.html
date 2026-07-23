@@ -13,7 +13,8 @@
     <a class="brand" href="#start"><img src="assets/images/taxi-erbas-original-logo.png" alt="Taxi Erbas Bad Wörishofen"></a>
     <button class="menu-toggle" aria-label="Menü öffnen">☰</button>
     <nav class="main-nav">
-      <a href="#leistungen">Leistungen</a><a href="fuhrpark.html">Fuhrpark</a><a href="#zusatzdienste">Weitere Dienste</a><a href="#bewertungen">Bewertungen</a><a href="#kontakt">Kontakt</a>
+      <a href="#leistungen">Leistungen</a><a href="fuhrpark.html">Fuhrpark</a><a href="#zusatzdienste">Weitere Dienste</a><a href="#bewertungen">Bewertungen</a><a href="#fahrtanfrage">Fahrt anfragen</a>
+      <a href="#kontakt">Kontakt</a>
       <a class="nav-call" href="tel:+4982477585">08247 7585</a>
     </nav>
   </div>
@@ -290,6 +291,154 @@
   <form class="contact-form" action="mailto:fahrdienst-erbas@hotmail.com" method="post" enctype="text/plain"><label>Name<input name="Name" required></label><label>E-Mail<input type="email" name="E-Mail" required></label><label>Betreff<input name="Betreff"></label><label>Nachricht<textarea name="Nachricht" rows="6" required></textarea></label><button class="btn primary" type="submit">Anfrage senden</button><small>Das Formular öffnet Ihr E-Mail-Programm.</small></form>
 </div></section>
 </main>
+
+
+<section class="booking-section" id="fahrtanfrage" aria-labelledby="booking-title">
+  <div class="container">
+    <div class="booking-shell">
+      <aside class="booking-intro">
+        <span class="eyebrow">Online anfragen</span>
+        <h2 id="booking-title">Ihre Fahrt in wenigen Schritten</h2>
+        <p>Teilen Sie uns die wichtigsten Fahrtdaten mit. Wir prüfen die Anfrage persönlich und melden uns anschließend bei Ihnen.</p>
+
+        <div class="booking-benefits">
+          <div><span>01</span><p><strong>Einfach ausfüllen</strong><small>Alle wichtigen Angaben in einem Formular.</small></p></div>
+          <div><span>02</span><p><strong>Persönliche Prüfung</strong><small>Keine automatische Buchungszusage.</small></p></div>
+          <div><span>03</span><p><strong>Schnelle Rückmeldung</strong><small>Antwort per Telefon oder E-Mail.</small></p></div>
+        </div>
+
+        <div class="booking-contact-card">
+          <span>Direkt erreichbar</span>
+          <a href="tel:+4982477585">08247 7585</a>
+          <a href="mailto:fahrdienst-erbas@hotmail.com">fahrdienst-erbas@hotmail.com</a>
+        </div>
+      </aside>
+
+      <div class="booking-form-wrap">
+        <div class="booking-progress" aria-hidden="true">
+          <span class="active">1</span><i></i><span>2</span><i></i><span>3</span>
+        </div>
+
+        <form class="booking-form" id="booking-form" novalidate>
+          <div class="booking-step active" data-step="1">
+            <div class="booking-step-head">
+              <span>Schritt 1 von 3</span>
+              <h3>Persönliche Daten</h3>
+            </div>
+
+            <div class="booking-grid">
+              <label class="booking-field full">
+                <span>Vor- und Nachname *</span>
+                <input type="text" name="customer_name" autocomplete="name" required placeholder="Max Mustermann">
+                <small class="field-error"></small>
+              </label>
+
+              <label class="booking-field">
+                <span>Telefonnummer *</span>
+                <input type="tel" name="customer_phone" autocomplete="tel" required placeholder="0170 1234567">
+                <small class="field-error"></small>
+              </label>
+
+              <label class="booking-field">
+                <span>E-Mail-Adresse</span>
+                <input type="email" name="customer_email" autocomplete="email" placeholder="max@beispiel.de">
+                <small class="field-error"></small>
+              </label>
+            </div>
+          </div>
+
+          <div class="booking-step" data-step="2">
+            <div class="booking-step-head">
+              <span>Schritt 2 von 3</span>
+              <h3>Fahrtdaten</h3>
+            </div>
+
+            <div class="booking-grid">
+              <label class="booking-field full">
+                <span>Abholort *</span>
+                <input type="text" name="pickup" required placeholder="Straße, Hausnummer, Ort">
+                <small class="field-error"></small>
+              </label>
+
+              <label class="booking-field full">
+                <span>Zielort *</span>
+                <input type="text" name="destination" required placeholder="Straße, Hausnummer, Ort">
+                <small class="field-error"></small>
+              </label>
+
+              <label class="booking-field">
+                <span>Datum *</span>
+                <input type="date" name="ride_date" required>
+                <small class="field-error"></small>
+              </label>
+
+              <label class="booking-field">
+                <span>Uhrzeit *</span>
+                <input type="time" name="ride_time" required>
+                <small class="field-error"></small>
+              </label>
+
+              <label class="booking-field">
+                <span>Personenanzahl *</span>
+                <select name="passengers" required>
+                  <option value="">Bitte wählen</option>
+                  <option>1 Person</option><option>2 Personen</option><option>3 Personen</option>
+                  <option>4 Personen</option><option>5 Personen</option><option>6 Personen</option>
+                  <option>7 Personen</option><option>8 Personen</option>
+                </select>
+                <small class="field-error"></small>
+              </label>
+
+              <label class="booking-field">
+                <span>Gepäck</span>
+                <select name="luggage">
+                  <option>Kein oder wenig Gepäck</option>
+                  <option>1–2 Gepäckstücke</option>
+                  <option>3–4 Gepäckstücke</option>
+                  <option>Mehr als 4 Gepäckstücke</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="booking-step" data-step="3">
+            <div class="booking-step-head">
+              <span>Schritt 3 von 3</span>
+              <h3>Zusätzliche Angaben</h3>
+            </div>
+
+            <div class="booking-options">
+              <label><input type="checkbox" name="ride_type" value="Flughafentransfer"><span><b>✈</b>Flughafentransfer</span></label>
+              <label><input type="checkbox" name="ride_type" value="Rollstuhlfahrt"><span><b>♿</b>Rollstuhlfahrt</span></label>
+              <label><input type="checkbox" name="ride_type" value="Krankenfahrt"><span><b>♥</b>Krankenfahrt</span></label>
+              <label><input type="checkbox" name="ride_type" value="Kleinbus"><span><b>👥</b>Kleinbus / Gruppe</span></label>
+            </div>
+
+            <label class="booking-field full">
+              <span>Zusätzliche Nachricht</span>
+              <textarea name="message" rows="5" placeholder="Zum Beispiel: Kindersitz, Begleitperson, besondere Abholhinweise …"></textarea>
+            </label>
+
+            <label class="booking-consent">
+              <input type="checkbox" name="privacy" required>
+              <span>Ich habe die <a href="datenschutz.html">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Angaben zur Bearbeitung der Anfrage zu. *</span>
+            </label>
+            <small class="privacy-error field-error"></small>
+          </div>
+
+          <div class="booking-actions">
+            <button class="booking-back" type="button" hidden>Zurück</button>
+            <button class="booking-next" type="button">Weiter</button>
+            <button class="booking-submit" type="submit" hidden>Anfrage vorbereiten</button>
+          </div>
+
+          <div class="booking-status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 <footer><div class="container footer-grid"><div><strong>Taxi & Mietwagen Zentrale Erbas</strong><p>Professionelle Personenbeförderung in Bad Wörishofen.</p></div><div><a href="tel:+4982477585">08247 7585</a><a href="mailto:fahrdienst-erbas@hotmail.com">fahrdienst-erbas@hotmail.com</a></div><div><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></div></div><div class="container copyright">© <span id="year"></span> Taxi & Mietwagen Zentrale Erbas</div></footer>
 <div class="mobile-bar"><a href="tel:+4982477585">Anrufen</a><a href="#kontakt">Anfragen</a></div>

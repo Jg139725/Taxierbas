@@ -286,3 +286,132 @@ document.addEventListener("DOMContentLoaded", () => {
     if(event.key==="ArrowRight") show(activeIndex+1);
   });
 })();
+
+
+/* Paket 10.1 – Anfrageformular, Schritte und Validierung */
+(function(){
+  const form = document.getElementById("booking-form");
+  if(!form) return;
+
+  const steps = [...form.querySelectorAll(".booking-step")];
+  const progressDots = [...document.querySelectorAll(".booking-progress span")];
+  const progressLines = [...document.querySelectorAll(".booking-progress i")];
+  const back = form.querySelector(".booking-back");
+  const next = form.querySelector(".booking-next");
+  const submit = form.querySelector(".booking-submit");
+  const status = form.querySelector(".booking-status");
+  let current = 0;
+
+  const today = new Date();
+  const dateInput = form.querySelector('input[name="ride_date"]');
+  if(dateInput){
+    const local = new Date(today.getTime() - today.getTimezoneOffset()*60000)
+      .toISOString().split("T")[0];
+    dateInput.min = local;
+  }
+
+  function update(){
+    steps.forEach((step,index)=>step.classList.toggle("active",index===current));
+    progressDots.forEach((dot,index)=>{
+      dot.classList.toggle("active",index===current);
+      dot.classList.toggle("done",index<current);
+    });
+    progressLines.forEach((line,index)=>line.classList.toggle("done",index<current));
+    back.hidden = current===0;
+    next.hidden = current===steps.length-1;
+    submit.hidden = current!==steps.length-1;
+    status.textContent = "";
+    steps[current].querySelector("input,select,textarea")?.focus({preventScroll:true});
+  }
+
+  function errorFor(field,message){
+    const wrapper = field.closest(".booking-field");
+    wrapper?.classList.toggle("has-error",Boolean(message));
+    const error = wrapper?.querySelector(".field-error");
+    if(error) error.textContent = message || "";
+  }
+
+  function validateStep(index){
+    let valid = true;
+    const fields = [...steps[index].querySelectorAll("input,select,textarea")];
+
+    fields.forEach(field=>{
+      if(field.type==="checkbox") return;
+      let message = "";
+
+      if(field.required && !field.value.trim()){
+        message = "Bitte dieses Feld ausfüllen.";
+      }else if(field.type==="email" && field.value && !field.validity.valid){
+        message = "Bitte eine gültige E-Mail-Adresse eingeben.";
+      }else if(field.type==="tel" && field.value && field.value.replace(/\D/g,"").length<6){
+        message = "Bitte eine gültige Telefonnummer eingeben.";
+      }
+
+      errorFor(field,message);
+      if(message) valid = false;
+    });
+
+    if(index===2){
+      const privacy = form.querySelector('input[name="privacy"]');
+      const privacyError = form.querySelector(".privacy-error");
+      if(!privacy.checked){
+        privacyError.textContent = "Bitte der Datenschutzerklärung zustimmen.";
+        valid = false;
+      }else{
+        privacyError.textContent = "";
+      }
+    }
+
+    if(!valid){
+      steps[index].querySelector(".has-error input,.has-error select,.has-error textarea")?.focus();
+    }
+    return valid;
+  }
+
+  next.addEventListener("click",()=>{
+    if(!validateStep(current)) return;
+    current++;
+    update();
+  });
+
+  back.addEventListener("click",()=>{
+    current--;
+    update();
+  });
+
+  form.addEventListener("input",(event)=>{
+    if(event.target.matches("input,select,textarea")){
+      if(event.target.type!=="checkbox") errorFor(event.target,"");
+      if(event.target.name==="privacy") form.querySelector(".privacy-error").textContent="";
+    }
+  });
+
+  form.addEventListener("submit",(event)=>{
+    event.preventDefault();
+    if(!validateStep(current)) return;
+
+    const data = new FormData(form);
+    const types = data.getAll("ride_type").join(", ") || "Keine besondere Auswahl";
+
+    status.innerHTML =
+      "<strong>Das Formular ist vollständig vorbereitet.</strong><br>" +
+      "Der echte Versand an fahrdienst-erbas@hotmail.com wird in Paket 10.2 aktiviert. " +
+      "Ihre Eingaben wurden noch nicht versendet.";
+
+    console.info("Vorbereitete Fahrtanfrage",{
+      customer_name:data.get("customer_name"),
+      customer_phone:data.get("customer_phone"),
+      customer_email:data.get("customer_email"),
+      pickup:data.get("pickup"),
+      destination:data.get("destination"),
+      ride_date:data.get("ride_date"),
+      ride_time:data.get("ride_time"),
+      passengers:data.get("passengers"),
+      luggage:data.get("luggage"),
+      ride_type:types,
+      message:data.get("message")
+    });
+  });
+
+  update();
+})();
