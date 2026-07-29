@@ -60,7 +60,8 @@
         </div>
 
         <nav>
-          <button class="nav-button active" data-view="overview">Übersicht</button>
+          <button class="nav-button dispatch-nav active" data-view="dispatch">Leitstelle</button>
+          <button class="nav-button" data-view="overview">Übersicht</button>
           <button class="nav-button" data-view="rides">Fahrten</button>
           <button class="nav-button" data-view="fleet">Fuhrpark</button>
         </nav>
@@ -78,7 +79,7 @@
           <a class="topbar-logo" href="index.html" aria-label="Zur Taxi-Erbas-Website"><img src="assets/images/taxi-erbas-logo-hd.png" alt="Taxi Erbas"></a>
           <div>
             <p class="eyebrow">Interner Bereich</p>
-            <h2 id="page-title">Übersicht</h2>
+            <h2 id="page-title">Leitstelle</h2>
           </div>
           <div class="topbar-user">
             <span class="status-dot"></span>
@@ -86,7 +87,55 @@
           </div>
         </header>
 
-        <section class="view active" id="view-overview">
+
+        <section class="view active" id="view-dispatch">
+          <div class="dispatch-hero">
+            <div>
+              <p class="eyebrow">Live-Disposition</p>
+              <h3>Disponenten-Leitstelle</h3>
+              <p>Fahrzeuge, offene Aufträge und Fahrer auf einem Bildschirm.</p>
+            </div>
+            <div class="dispatch-clock">
+              <strong id="dispatch-clock">--:--</strong>
+              <span id="dispatch-date">–</span>
+            </div>
+          </div>
+
+          <div class="dispatch-stats">
+            <article><span>Offene Aufträge</span><strong id="dispatch-open-count">0</strong></article>
+            <article><span>Freie Fahrzeuge</span><strong id="dispatch-free-vehicles">0</strong></article>
+            <article><span>Freie Fahrer</span><strong id="dispatch-free-drivers">0</strong></article>
+            <article><span>Aktive Fahrten</span><strong id="dispatch-active-count">0</strong></article>
+          </div>
+
+          <div class="dispatch-board">
+            <article class="dispatch-column">
+              <div class="dispatch-column-head">
+                <div><span>Fuhrpark</span><h3>Fahrzeuge</h3></div>
+                <button class="primary mini-action" data-open-vehicle>+ Fahrzeug</button>
+              </div>
+              <div id="dispatch-vehicles" class="dispatch-list"></div>
+            </article>
+
+            <article class="dispatch-column dispatch-column-main">
+              <div class="dispatch-column-head">
+                <div><span>Aufträge</span><h3>Offene Fahrten</h3></div>
+                <button class="primary mini-action" data-open-ride>+ Neue Fahrt</button>
+              </div>
+              <div id="dispatch-rides" class="dispatch-list"></div>
+            </article>
+
+            <article class="dispatch-column">
+              <div class="dispatch-column-head">
+                <div><span>Team</span><h3>Fahrer</h3></div>
+                <span class="live-small"><i></i> Live</span>
+              </div>
+              <div id="dispatch-drivers" class="dispatch-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-overview">
           <div class="stat-grid">
             <article><span>Heute</span><strong id="stat-today">0</strong><small>Fahrten</small></article>
             <article><span>Offen</span><strong id="stat-open">0</strong><small>noch zu planen</small></article>

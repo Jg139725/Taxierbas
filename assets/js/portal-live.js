@@ -6,7 +6,9 @@
   let profile = null;
   let rides = [];
   let fleet = [];
+  let drivers = [];
   let realtimeChannel = null;
+  let clockTimer = null;
 
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
@@ -53,9 +55,10 @@
   }
 
   async function loadData() {
-    const [rideResult, vehicleResult] = await Promise.all([
+    const [rideResult, vehicleResult, driverResult] = await Promise.all([
       db.from("rides").select("*").order("ride_date", { ascending: true }).order("ride_time", { ascending: true }),
-      db.from("vehicles").select("*").order("name", { ascending: true })
+      db.from("vehicles").select("*").order("name", { ascending: true }),
+      db.from("profiles").select("id, full_name, role, active").eq("role", "driver").order("full_name", { ascending: true })
     ]);
 
     if (rideResult.error) throw rideResult.error;
@@ -63,6 +66,7 @@
 
     rides = rideResult.data || [];
     fleet = vehicleResult.data || [];
+    drivers = driverResult.error ? [] : (driverResult.data || []);
     renderAll();
   }
 
@@ -73,6 +77,7 @@
       .channel("taxi-erbas-live")
       .on("postgres_changes", { event:"*", schema:"public", table:"rides" }, loadData)
       .on("postgres_changes", { event:"*", schema:"public", table:"vehicles" }, loadData)
+      .on("postgres_changes", { event:"*", schema:"public", table:"profiles" }, loadData)
       .subscribe();
   }
 
@@ -92,6 +97,18 @@
     $$("[data-open-ride], [data-open-vehicle]").forEach(btn => {
       btn.style.display = canDispatch() ? "" : "none";
     });
+
+    const dispatchNav = $(".dispatch-nav");
+    if (!canDispatch()) {
+      dispatchNav.style.display = "none";
+      $$(".nav-button").forEach(b => b.classList.remove("active"));
+      $$(".view").forEach(v => v.classList.remove("active"));
+      $('[data-view="overview"]').classList.add("active");
+      $("#view-overview").classList.add("active");
+      $("#page-title").textContent = "Übersicht";
+    } else {
+      startDispatchClock();
+    }
 
     subscribeRealtime();
     loadData().catch(error => alert("Daten konnten nicht geladen werden: " + error.message));
@@ -176,6 +193,97 @@
   }));
 
   $("#mobile-menu").addEventListener("click", () => $(".sidebar").classList.toggle("open"));
+
+
+  function startDispatchClock() {
+    const updateClock = () => {
+      const now = new Date();
+      const clock = $("#dispatch-clock");
+      const date = $("#dispatch-date");
+      if (clock) clock.textContent = now.toLocaleTimeString("de-DE", { hour:"2-digit", minute:"2-digit" });
+      if (date) date.textContent = now.toLocaleDateString("de-DE", {
+        weekday:"long", day:"2-digit", month:"2-digit", year:"numeric"
+      });
+    };
+    updateClock();
+    if (clockTimer) clearInterval(clockTimer);
+    clockTimer = setInterval(updateClock, 30000);
+  }
+
+  function driverState(driver) {
+    const activeRide = rides.find(r =>
+      r.assigned_driver === driver.id && ["Zugewiesen", "Unterwegs"].includes(r.status)
+    );
+    if (!driver.active) return { label:"Deaktiviert", className:"offline", ride:null };
+    if (activeRide?.status === "Unterwegs") return { label:"Unterwegs", className:"busy", ride:activeRide };
+    if (activeRide) return { label:"Zugewiesen", className:"reserved", ride:activeRide };
+    return { label:"Frei", className:"free", ride:null };
+  }
+
+  function renderDispatch() {
+    if (!canDispatch() || !$("#dispatch-rides")) return;
+
+    const openRides = rides.filter(r => r.status !== "Abgeschlossen");
+    const activeRides = rides.filter(r => r.status === "Unterwegs");
+    const freeVehicles = fleet.filter(v => v.status === "Verfügbar");
+    const freeDrivers = drivers.filter(d => driverState(d).label === "Frei");
+
+    $("#dispatch-open-count").textContent = openRides.length;
+    $("#dispatch-free-vehicles").textContent = freeVehicles.length;
+    $("#dispatch-free-drivers").textContent = freeDrivers.length;
+    $("#dispatch-active-count").textContent = activeRides.length;
+
+    $("#dispatch-vehicles").innerHTML = fleet.length ? fleet.map(v => `
+      <button class="dispatch-item dispatch-vehicle-item" data-dispatch-vehicle="${v.id}">
+        <span class="state-light ${v.status === "Verfügbar" ? "free" : v.status === "Unterwegs" ? "busy" : "offline"}"></span>
+        <span class="dispatch-item-copy">
+          <strong>${escapeHtml(v.name)}</strong>
+          <small>${escapeHtml(v.plate)} · ${escapeHtml(v.location)}</small>
+        </span>
+        <span class="${badgeClass(v.status)}">${escapeHtml(v.status)}</span>
+      </button>`).join("") : '<div class="empty dispatch-empty">Noch keine Fahrzeuge angelegt.</div>';
+
+    $("#dispatch-rides").innerHTML = openRides.length ? openRides.map(r => `
+      <article class="dispatch-ride">
+        <div class="dispatch-ride-time">
+          <strong>${escapeHtml(r.ride_time?.slice(0,5) || "–")}</strong>
+          <span>${formatDate(r.ride_date)}</span>
+        </div>
+        <div class="dispatch-ride-copy">
+          <strong>${escapeHtml(r.customer_name)}</strong>
+          <small>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</small>
+          <div>
+            <span>${escapeHtml(r.driver_name || "Fahrer offen")}</span>
+            <span>${escapeHtml(r.vehicle_name || "Fahrzeug offen")}</span>
+          </div>
+        </div>
+        <div class="dispatch-ride-actions">
+          <span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span>
+          <button data-dispatch-edit-ride="${r.id}">${r.assigned_driver && r.vehicle_id ? "Bearbeiten" : "Zuweisen"}</button>
+        </div>
+      </article>`).join("") : '<div class="empty dispatch-empty">Keine offenen Fahrten.</div>';
+
+    $("#dispatch-drivers").innerHTML = drivers.length ? drivers.map(d => {
+      const state = driverState(d);
+      return `
+        <article class="dispatch-item driver-item">
+          <span class="driver-avatar">${escapeHtml((d.full_name || "?").trim().charAt(0).toUpperCase())}</span>
+          <span class="dispatch-item-copy">
+            <strong>${escapeHtml(d.full_name)}</strong>
+            <small>${state.ride ? `${escapeHtml(state.ride.ride_time?.slice(0,5) || "")} · ${escapeHtml(state.ride.destination)}` : "Kein aktiver Auftrag"}</small>
+          </span>
+          <span class="driver-state ${state.className}">${state.label}</span>
+        </article>`;
+    }).join("") : '<div class="empty dispatch-empty">Noch keine Fahrer in Supabase angelegt.</div>';
+
+    $$("[data-dispatch-edit-ride]").forEach(btn =>
+      btn.addEventListener("click", () => openRide(rides.find(r => r.id === btn.dataset.dispatchEditRide)))
+    );
+
+    $$("[data-dispatch-vehicle]").forEach(btn =>
+      btn.addEventListener("click", () => openVehicle(fleet.find(v => v.id === btn.dataset.dispatchVehicle)))
+    );
+  }
 
   function renderStats() {
     const today = new Date().toISOString().slice(0,10);
@@ -297,20 +405,10 @@
 
   async function loadDrivers(selected = "") {
     const select = $("#ride-form").elements.driver;
-    const { data, error } = await db
-      .from("profiles")
-      .select("id, full_name")
-      .eq("active", true)
-      .eq("role", "driver")
-      .order("full_name");
-
-    if (error) {
-      select.innerHTML = '<option value="">Noch offen</option>';
-      return;
-    }
-
     select.innerHTML = '<option value="">Noch offen</option>' +
-      data.map(d => `<option value="${d.id}" ${d.id===selected?"selected":""}>${escapeHtml(d.full_name)}</option>`).join("");
+      drivers.filter(d => d.active).map(d =>
+        `<option value="${d.id}" ${d.id===selected?"selected":""}>${escapeHtml(d.full_name)}</option>`
+      ).join("");
   }
 
   async function openRide(ride = null) {
@@ -435,6 +533,7 @@
   });
 
   function renderAll() {
+    renderDispatch();
     renderStats();
     renderOverview();
     renderRides();
