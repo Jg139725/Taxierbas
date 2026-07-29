@@ -350,6 +350,25 @@
   $$("[data-open-ride]").forEach(btn => btn.addEventListener("click", () => openRide()));
   $$("[data-open-vehicle]").forEach(btn => btn.addEventListener("click", () => openVehicle()));
 
+  // Dialoge zuverlässig schließen: X, Abbrechen, Escape und Klick auf den Hintergrund.
+  $$('[data-close-dialog]').forEach(button => {
+    button.addEventListener('click', () => {
+      const dialog = button.closest('dialog');
+      if (dialog?.open) dialog.close();
+    });
+  });
+
+  $$('dialog').forEach(dialog => {
+    dialog.addEventListener('click', event => {
+      if (event.target === dialog) dialog.close();
+    });
+
+    dialog.addEventListener('cancel', event => {
+      event.preventDefault();
+      dialog.close();
+    });
+  });
+
   $("#ride-form").addEventListener("submit", async e => {
     e.preventDefault();
     if (!canDispatch()) return;

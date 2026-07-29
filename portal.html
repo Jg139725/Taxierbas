@@ -127,10 +127,10 @@
   </main>
 
   <dialog id="ride-dialog">
-    <form method="dialog" id="ride-form" class="dialog-form">
+    <form id="ride-form" class="dialog-form">
       <div class="dialog-head">
         <div><span>Disposition</span><h3>Fahrt eintragen</h3></div>
-        <button class="icon-button" value="cancel" aria-label="Schließen">×</button>
+        <button type="button" class="icon-button" data-close-dialog aria-label="Fenster schließen">×</button>
       </div>
       <input type="hidden" name="id">
       <div class="form-grid">
@@ -147,17 +147,17 @@
         <label class="full"><span>Hinweis</span><textarea name="note" rows="3" placeholder="Besondere Hinweise"></textarea></label>
       </div>
       <div class="dialog-actions">
-        <button value="cancel" class="secondary">Abbrechen</button>
+        <button type="button" class="secondary" data-close-dialog>Abbrechen</button>
         <button type="submit" class="primary">Fahrt speichern</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="vehicle-dialog">
-    <form method="dialog" id="vehicle-form" class="dialog-form">
+    <form id="vehicle-form" class="dialog-form">
       <div class="dialog-head">
         <div><span>Fuhrpark</span><h3>Fahrzeug verwalten</h3></div>
-        <button class="icon-button" value="cancel" aria-label="Schließen">×</button>
+        <button type="button" class="icon-button" data-close-dialog aria-label="Fenster schließen">×</button>
       </div>
       <input type="hidden" name="id">
       <div class="form-grid">
@@ -172,7 +172,7 @@
         <label class="full"><span>Notiz / Mangel</span><textarea name="note" rows="3" placeholder="Keine Schäden"></textarea></label>
       </div>
       <div class="dialog-actions">
-        <button value="cancel" class="secondary">Abbrechen</button>
+        <button type="button" class="secondary" data-close-dialog>Abbrechen</button>
         <button type="submit" class="primary">Fahrzeug speichern</button>
       </div>
     </form>
