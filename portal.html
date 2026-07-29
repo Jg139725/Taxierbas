@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow">
-  <title>Taxi Erbas – Fahrerportal Demo</title>
+  <title>Taxi Erbas – Mitarbeiterportal</title>
   <link rel="stylesheet" href="assets/css/portal.css">
 </head>
 <body>
@@ -14,10 +14,10 @@
     <section class="login-screen" id="login-screen">
       <div class="login-card">
         <a class="back-link" href="index.html">← Zur Website</a>
-        <div class="brand-mark">TE</div>
+        <div class="portal-logo-login"><img src="assets/images/taxi-erbas-original-logo.png" alt="Taxi Erbas"></div>
         <p class="eyebrow">Live-Testversion</p>
         <h1>Fahrer- & Disponentenportal</h1>
-        <p class="login-copy">Teste Fahrtenverwaltung und Fuhrparkstatus direkt im Browser. Es werden noch keine echten Mitarbeiterdaten übertragen.</p>
+        <p class="login-copy">Sicherer interner Zugang für Fahrer, Disposition und Verwaltung. Nach der Anmeldung wird automatisch die passende Ansicht zur Benutzerrolle geöffnet.</p>
 
         <form id="login-form">
           <label>
@@ -28,7 +28,7 @@
             <span>Passwort</span>
             <input id="login-password" type="password" autocomplete="current-password" placeholder="Passwort" required>
           </label>
-          <button type="submit">Demo öffnen</button>
+          <button type="submit">Anmelden</button>
           <p class="login-error" id="login-error"></p>
         </form>
 
@@ -47,8 +47,8 @@
     <section class="dashboard hidden" id="dashboard">
       <aside class="sidebar">
         <div class="sidebar-brand">
-          <div class="brand-mark small">TE</div>
-          <div><strong>Taxi Erbas</strong><span>Live-Portal</span></div>
+          <div class="portal-logo-small"><img src="assets/images/taxi-erbas-original-logo.png" alt="Taxi Erbas"></div>
+          <div><strong>Taxi Erbas</strong><span>Mitarbeiterportal</span></div>
         </div>
 
         <nav>
@@ -67,6 +67,7 @@
       <div class="content">
         <header class="topbar">
           <button class="mobile-menu" id="mobile-menu">☰</button>
+          <a class="topbar-logo" href="index.html" aria-label="Zur Taxi-Erbas-Website"><img src="assets/images/taxi-erbas-original-logo.png" alt="Taxi Erbas"></a>
           <div>
             <p class="eyebrow">Interner Bereich</p>
             <h2 id="page-title">Übersicht</h2>
