@@ -227,37 +227,99 @@
     </section>
   </main>
 
-  <dialog id="ride-dialog">
-    <form id="ride-form" class="dialog-form">
-      <div class="dialog-head">
-        <div><span>Disposition</span><h3>Fahrt eintragen</h3></div>
-        <button type="button" class="icon-button" data-close-dialog aria-label="Fenster schließen">×</button>
+  <dialog id="ride-dialog" class="ride-dialog-pro">
+  <form id="ride-form" class="dialog-form ride-form-pro">
+    <div class="dialog-head">
+      <div><span>Disposition</span><h3>Fahrt eintragen</h3></div>
+      <button type="button" class="icon-button" data-close-dialog aria-label="Fenster schließen">×</button>
+    </div>
+
+    <input type="hidden" name="id">
+    <input type="hidden" id="ride-mode-value" value="single">
+
+    <section class="ride-form-section">
+      <div class="ride-section-title">
+        <span>01</span>
+        <div><strong>Art der Fahrt</strong><small>Wähle zuerst zwischen Einzel- und Mehrpersonenfahrt</small></div>
       </div>
-      <input type="hidden" name="id">
+      <div class="ride-mode-switch">
+        <button type="button" class="ride-mode-card active" data-ride-mode="single">
+          <span class="ride-mode-icon">👤</span>
+          <span><strong>Einzelfahrt</strong><small>Eine Person, ein Fahrer</small></span>
+        </button>
+        <button type="button" class="ride-mode-card" data-ride-mode="group">
+          <span class="ride-mode-icon">👥</span>
+          <span><strong>Mehrpersonenfahrt</strong><small>Mehrere Personen, mehrere Fahrer möglich</small></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="ride-form-section" id="single-customer-section">
+      <div class="ride-section-title">
+        <span>02</span>
+        <div><strong>Kontaktdaten</strong><small>Daten der einzelnen Person</small></div>
+      </div>
       <div class="form-grid">
-        <label><span>Kunde</span><input name="customer" required placeholder="Max Mustermann"></label>
+        <label><span>Kunde</span><input name="customer" placeholder="Max Mustermann"></label>
         <label><span>Telefon</span><input name="phone" placeholder="0170 1234567"></label>
-        <label class="full"><span>Abholort</span><input name="pickup" required placeholder="Straße, Ort"></label>
-        <label class="full"><span>Zielort</span><input name="destination" required placeholder="Straße, Ort"></label>
+        <label class="full"><span>Abholort</span><input name="pickup" placeholder="Straße, Hausnummer, Ort"></label>
+        <label class="full"><span>Zielort</span><input name="destination" placeholder="Straße, Hausnummer, Ort"></label>
+      </div>
+    </section>
+
+    <section class="ride-form-section hidden-mode-section" id="group-customer-section">
+      <div class="ride-section-title ride-section-with-action">
+        <span>02</span>
+        <div><strong>Personen hinzufügen</strong><small>Jede Person erhält eigene Daten</small></div>
+        <button type="button" class="small-outline-btn" id="add-group-passenger">+ Person</button>
+      </div>
+      <div id="group-passenger-list" class="group-passenger-list"></div>
+    </section>
+
+    <section class="ride-form-section">
+      <div class="ride-section-title">
+        <span>03</span>
+        <div><strong>Zuweisung</strong><small>Fahrer und Fahrzeug festlegen</small></div>
+      </div>
+
+      <div class="form-grid">
         <label><span>Datum</span><input name="date" type="date" required></label>
         <label><span>Uhrzeit</span><input name="time" type="time" required></label>
-        <div class="full multi-driver-field"><span>Fahrer (mehrere möglich)</span><div id="ride-driver-list" class="driver-checkbox-list"></div><small>Mehrere Fahrer können derselben Fahrt zugewiesen werden.</small></div>
+
+        <div class="full" id="single-driver-section">
+          <span class="field-title">Fahrer</span>
+          <select id="single-driver-select" class="premium-select"><option value="">Noch offen</option></select>
+        </div>
+
+        <div class="full hidden-mode-section" id="group-driver-section">
+          <span class="field-title">Fahrer (mehrere möglich)</span>
+          <div class="driver-add-row">
+            <select id="group-driver-select" class="premium-select"><option value="">Fahrer auswählen …</option></select>
+            <button type="button" class="small-outline-btn" id="add-group-driver">+ Fahrer</button>
+          </div>
+          <div id="group-driver-chips" class="driver-chip-list"></div>
+        </div>
+
         <label><span>Fahrzeug</span><select name="vehicle" id="ride-vehicle-select"></select></label>
         <label><span>Status</span><select name="status"><option>Offen</option><option>Zugewiesen</option><option>Unterwegs</option><option>Abgeschlossen</option></select></label>
         <label><span>Fahrtart</span><select name="type"><option>Taxifahrt</option><option>Krankenfahrt</option><option>Flughafentransfer</option><option>Schülerfahrt</option></select></label>
         <label class="full"><span>Hinweis</span><textarea name="note" rows="3" placeholder="Besondere Hinweise"></textarea></label>
+
         <div class="full series-occurrence-info" id="series-occurrence-info" hidden>
-          <strong>Teil einer Wiederholungsfahrt</strong><span>Änderungen hier gelten nur für diesen einzelnen Termin.</span>
+          <strong>Teil einer Wiederholungsfahrt</strong>
+          <span>Änderungen hier gelten nur für diesen einzelnen Termin.</span>
         </div>
       </div>
-      <div class="dialog-actions">
-        <button type="button" class="secondary" data-close-dialog>Abbrechen</button>
-        <button type="submit" class="primary">Fahrt speichern</button>
-      </div>
-    </form>
-  </dialog>
+    </section>
 
-  <dialog id="vehicle-dialog">
+    <div class="dialog-actions ride-dialog-actions">
+      <button type="button" class="secondary" data-close-dialog>Abbrechen</button>
+      <button type="submit" class="primary">Fahrt speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="vehicle-dialog">
     <form id="vehicle-form" class="dialog-form">
       <div class="dialog-head">
         <div><span>Fuhrpark</span><h3>Fahrzeug verwalten</h3></div>

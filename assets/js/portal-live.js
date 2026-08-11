@@ -1,7 +1,7 @@
 (() => {
 "use strict";
 const db=window.taxiSupabase;
-let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],realtimeChannel=null,clockTimer=null;
+let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],realtimeChannel=null,clockTimer=null;
 let calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=null,knownRideIds=new Set();
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
@@ -15,9 +15,30 @@ function showError(m){$("#login-error").textContent=m||"Es ist ein Fehler aufget
 function badgeClass(v){if(["Werkstatt","Nicht verfügbar","Reinigung erforderlich","Reserve"].includes(v))return"badge danger";if(["Unterwegs","Leicht verschmutzt","¼ voll","Halbvoll","Offen"].includes(v))return"badge warn";return"badge"}
 async function loadProfile(){const{data,error}=await db.from("profiles").select("id,full_name,role,active").eq("id",session.user.id).single();if(error)throw new Error("Mitarbeiterprofil konnte nicht geladen werden.");if(!data.active)throw new Error("Dieser Mitarbeiterzugang wurde deaktiviert.");profile=data}
 async function refreshRecurring(){if(!canDispatch())return;try{await db.rpc("refresh_recurring_occurrences",{p_until:isoDate(new Date(Date.now()+365*86400000))})}catch(e){console.warn("Serienfahrten konnten nicht aktualisiert werden",e)}}
-async function loadData(){await refreshRecurring();const calls=[db.from("rides").select("*").order("ride_date").order("ride_time"),db.from("vehicles").select("*").order("name")];if(canDispatch()){calls.push(db.from("profiles").select("id,full_name,role,active").eq("role","driver").order("full_name"),db.from("recurring_series").select("*").order("title"))}const results=await Promise.all(calls);if(results[0].error)throw results[0].error;if(results[1].error)throw results[1].error;rides=results[0].data||[];fleet=results[1].data||[];drivers=canDispatch()&&!results[2].error?(results[2].data||[]):[];series=canDispatch()&&!results[3]?.error?(results[3].data||[]):[];knownRideIds=new Set(rides.map(r=>r.id));renderAll()}
-function isMine(r){return rideDriverIds(r).includes(session?.user?.id)}
-async function notifyRide(payload){if(!profile||profile.role!=="driver"||Notification.permission!=="granted")return;const r=payload.new;if(!r||!rideDriverIds(r).includes(profile.id))return;const title=payload.eventType==="INSERT"?"Neue Fahrt zugewiesen":"Fahrt aktualisiert";const body=`${(r.ride_time||"").slice(0,5)} · ${r.pickup} → ${r.destination}`;try{const reg=await navigator.serviceWorker?.ready;if(reg)await reg.showNotification(title,{body,icon:"assets/images/taxi-erbas-original-logo.png",badge:"assets/images/taxi-erbas-original-logo.png",tag:`ride-${r.id}`,data:{url:"portal.html"}});else new Notification(title,{body})}catch{new Notification(title,{body})}}
+async function loadData(){
+await refreshRecurring();
+const calls=[
+  db.from("rides").select("*").order("ride_date").order("ride_time"),
+  db.from("vehicles").select("*").order("name"),
+  db.from("ride_passengers").select("*").order("sort_order")
+];
+if(canDispatch()){
+  calls.push(
+    db.from("profiles").select("id,full_name,role,active").eq("role","driver").order("full_name"),
+    db.from("recurring_series").select("*").order("title")
+  )
+}
+const results=await Promise.all(calls);
+if(results[0].error)throw results[0].error;
+if(results[1].error)throw results[1].error;
+rides=results[0].data||[];
+fleet=results[1].data||[];
+ridePassengers=results[2].error?[]:(results[2].data||[]);
+drivers=canDispatch()&&!results[3]?.error?(results[3].data||[]):[];
+series=canDispatch()&&!results[4]?.error?(results[4].data||[]):[];
+knownRideIds=new Set(rides.map(r=>r.id));
+renderAll()
+}
 function subscribeRealtime(){if(realtimeChannel)db.removeChannel(realtimeChannel);realtimeChannel=db.channel("taxi-erbas-live").on("postgres_changes",{event:"*",schema:"public",table:"rides"},p=>{notifyRide(p);loadData()}).on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"profiles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"recurring_series"},loadData).subscribe()}
 function startClock(){const f=()=>{const n=new Date();if($("#dispatch-clock"))$("#dispatch-clock").textContent=n.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});if($("#dispatch-date"))$("#dispatch-date").textContent=n.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})};f();clearInterval(clockTimer);clockTimer=setInterval(f,30000)}
 function updateNotificationUI(){const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;const state=Notification.permission;s.textContent=state==="granted"?"aktiv":state==="denied"?"im Browser blockiert":"nicht aktiviert";b.classList.toggle("notification-on",state==="granted")}
@@ -38,11 +59,270 @@ function renderFleet(){$('#fleet-list').innerHTML=fleet.length?fleet.map(v=>`<ar
 function driverCheckboxes(target,selected=[]){const el=$(target);el.innerHTML=drivers.filter(d=>d.active).map(d=>`<label><input type="checkbox" value="${d.id}" ${selected.includes(d.id)?'checked':''}><span>${escapeHtml(d.full_name)}</span></label>`).join('')||'<small>Keine Fahrer angelegt.</small>'}
 function selectedDrivers(target){const ids=$$(`${target} input:checked`).map(i=>i.value);return{ids,names:ids.map(id=>drivers.find(d=>d.id===id)?.full_name).filter(Boolean)}}
 function refreshVehicleOptions(select,selected=''){select.innerHTML='<option value="">Noch offen</option>'+fleet.map(v=>`<option value="${v.id}" ${v.id===selected?'selected':''}>${escapeHtml(v.name)} (${escapeHtml(v.plate)})</option>`).join('')}
-async function openRide(r=null,presetDate=null){const f=$('#ride-form');f.reset();f.elements.id.value=r?.id||'';f.elements.customer.value=r?.customer_name||'';f.elements.phone.value=r?.customer_phone||'';f.elements.pickup.value=r?.pickup||'';f.elements.destination.value=r?.destination||'';f.elements.date.value=r?.ride_date||presetDate||isoDate(new Date());f.elements.time.value=(r?.ride_time||'').slice(0,5);f.elements.status.value=r?.status||'Offen';f.elements.type.value=r?.ride_type||'Taxifahrt';f.elements.note.value=r?.note||'';refreshVehicleOptions($('#ride-vehicle-select'),r?.vehicle_id||'');driverCheckboxes('#ride-driver-list',rideDriverIds(r||{}));$('#series-occurrence-info').hidden=!r?.is_recurring;$('#ride-dialog').showModal()}
+
+let groupDriverSelection=[];
+
+function passengersForRide(rideId){
+  return ridePassengers
+    .filter(p=>p.ride_id===rideId)
+    .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+}
+
+function setRideMode(mode){
+  $('#ride-mode-value').value=mode;
+  $$('[data-ride-mode]').forEach(btn=>btn.classList.toggle('active',btn.dataset.rideMode===mode));
+  $('#single-customer-section').classList.toggle('hidden-mode-section',mode!=='single');
+  $('#group-customer-section').classList.toggle('hidden-mode-section',mode!=='group');
+  $('#single-driver-section').classList.toggle('hidden-mode-section',mode!=='single');
+  $('#group-driver-section').classList.toggle('hidden-mode-section',mode!=='group');
+
+  const f=$('#ride-form');
+  f.elements.customer.required=mode==='single';
+  f.elements.pickup.required=mode==='single';
+  f.elements.destination.required=mode==='single';
+
+  if(mode==='group'&&!$('#group-passenger-list').children.length){
+    addPassengerRow()
+  }
+}
+
+function renderSingleDriverOptions(selected=''){
+  $('#single-driver-select').innerHTML=
+    '<option value="">Noch offen</option>'+
+    drivers.filter(d=>d.active).map(d=>
+      `<option value="${d.id}" ${d.id===selected?'selected':''}>${escapeHtml(d.full_name)}</option>`
+    ).join('')
+}
+
+function renderGroupDriverSelect(){
+  $('#group-driver-select').innerHTML=
+    '<option value="">Fahrer auswählen …</option>'+
+    drivers.filter(d=>d.active&&!groupDriverSelection.includes(d.id)).map(d=>
+      `<option value="${d.id}">${escapeHtml(d.full_name)}</option>`
+    ).join('')
+}
+
+function renderGroupDriverChips(){
+  $('#group-driver-chips').innerHTML=groupDriverSelection.map(id=>{
+    const d=drivers.find(x=>x.id===id);
+    return d
+      ? `<span class="driver-chip">${escapeHtml(d.full_name)}<button type="button" data-remove-group-driver="${id}">×</button></span>`
+      : ''
+  }).join('');
+
+  $$('[data-remove-group-driver]').forEach(btn=>{
+    btn.onclick=()=>{
+      groupDriverSelection=groupDriverSelection.filter(id=>id!==btn.dataset.removeGroupDriver);
+      renderGroupDriverChips();
+      renderGroupDriverSelect()
+    }
+  })
+}
+
+function addPassengerRow(data={}){
+  const list=$('#group-passenger-list');
+  const index=list.children.length;
+
+  list.insertAdjacentHTML('beforeend',`
+    <article class="group-passenger-card">
+      <span class="group-passenger-number">${index+1}</span>
+      <button type="button" class="remove-group-passenger">×</button>
+      <div class="group-passenger-fields">
+        <label>
+          <span>Name</span>
+          <input data-passenger-field="name" value="${escapeHtml(data.name||'')}" placeholder="Vor- und Nachname" required>
+        </label>
+        <label>
+          <span>Telefon</span>
+          <input data-passenger-field="phone" value="${escapeHtml(data.phone||'')}" placeholder="Telefonnummer">
+        </label>
+        <label class="full">
+          <span>Abholort</span>
+          <input data-passenger-field="pickup" value="${escapeHtml(data.pickup||'')}" placeholder="Straße, Hausnummer, Ort" required>
+        </label>
+        <label class="full">
+          <span>Zielort</span>
+          <input data-passenger-field="destination" value="${escapeHtml(data.destination||'')}" placeholder="Straße, Hausnummer, Ort" required>
+        </label>
+      </div>
+    </article>
+  `);
+
+  renumberPassengerRows()
+}
+
+function renumberPassengerRows(){
+  $$('#group-passenger-list .group-passenger-card').forEach((card,index)=>{
+    card.querySelector('.group-passenger-number').textContent=index+1;
+    card.querySelector('.remove-group-passenger').onclick=()=>{
+      if($('#group-passenger-list').children.length<=1){
+        alert('Mindestens eine Person muss eingetragen bleiben.');
+        return
+      }
+      card.remove();
+      renumberPassengerRows()
+    }
+  })
+}
+
+function collectGroupPassengers(){
+  return $$('#group-passenger-list .group-passenger-card').map((card,index)=>({
+    sort_order:index,
+    name:card.querySelector('[data-passenger-field="name"]').value.trim(),
+    phone:card.querySelector('[data-passenger-field="phone"]').value.trim(),
+    pickup:card.querySelector('[data-passenger-field="pickup"]').value.trim(),
+    destination:card.querySelector('[data-passenger-field="destination"]').value.trim()
+  }))
+}
+
+async function openRide(r=null,presetDate=null){
+const f=$('#ride-form');
+f.reset();
+f.elements.id.value=r?.id||'';
+f.elements.date.value=r?.ride_date||presetDate||isoDate(new Date());
+f.elements.time.value=(r?.ride_time||'').slice(0,5);
+f.elements.status.value=r?.status||'Offen';
+f.elements.type.value=r?.ride_type||'Taxifahrt';
+f.elements.note.value=r?.note||'';
+refreshVehicleOptions($('#ride-vehicle-select'),r?.vehicle_id||'');
+
+$('#group-passenger-list').innerHTML='';
+groupDriverSelection=[];
+
+const mode=r?.ride_mode||'single';
+
+if(mode==='group'){
+  const pax=passengersForRide(r?.id);
+  (pax.length?pax:[{
+    name:r?.customer_name||'',
+    phone:r?.customer_phone||'',
+    pickup:r?.pickup||'',
+    destination:r?.destination||''
+  }]).forEach(p=>addPassengerRow(p));
+
+  groupDriverSelection=rideDriverIds(r||{});
+  renderGroupDriverChips();
+  renderGroupDriverSelect()
+}else{
+  f.elements.customer.value=r?.customer_name||'';
+  f.elements.phone.value=r?.customer_phone||'';
+  f.elements.pickup.value=r?.pickup||'';
+  f.elements.destination.value=r?.destination||'';
+  renderSingleDriverOptions(rideDriverIds(r||{})[0]||'')
+}
+
+setRideMode(mode);
+$('#series-occurrence-info').hidden=!r?.is_recurring;
+$('#ride-dialog').showModal()
+}
 function openVehicle(v=null){const f=$('#vehicle-form');f.reset();f.elements.id.value=v?.id||'';f.elements.name.value=v?.name||'';f.elements.plate.value=v?.plate||'';f.elements.location.value=v?.location||'Betriebshof';f.elements.status.value=v?.status||'Verfügbar';f.elements.fuel.value=v?.fuel_level||'Voll';f.elements.cleanliness.value=v?.cleanliness||'Sauber';f.elements.mileage.value=v?.mileage||'';f.elements.driver.value=v?.current_driver_name||'';f.elements.note.value=v?.note||'';$('#vehicle-dialog').showModal()}
 function bindEditButtons(){$$('[data-edit-ride]').forEach(b=>b.onclick=()=>openRide(rides.find(r=>r.id===b.dataset.editRide)));$$('[data-edit-vehicle]').forEach(b=>b.onclick=()=>openVehicle(fleet.find(v=>v.id===b.dataset.editVehicle)))}
+$$('[data-ride-mode]').forEach(btn=>btn.addEventListener('click',()=>setRideMode(btn.dataset.rideMode)));
+$('#add-group-passenger')?.addEventListener('click',()=>addPassengerRow());
+$('#add-group-driver')?.addEventListener('click',()=>{
+  const id=$('#group-driver-select').value;
+  if(!id)return;
+  if(!groupDriverSelection.includes(id))groupDriverSelection.push(id);
+  renderGroupDriverChips();
+  renderGroupDriverSelect()
+});
 $$('[data-open-ride]').forEach(b=>b.addEventListener('click',()=>openRide()));$$('[data-open-vehicle]').forEach(b=>b.addEventListener('click',()=>openVehicle()));$$('[data-close-dialog]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog')?.close()));$$('dialog').forEach(d=>{d.addEventListener('click',e=>{if(e.target===d)d.close()});d.addEventListener('cancel',e=>{e.preventDefault();d.close()})});
-$('#ride-form').addEventListener('submit',async e=>{e.preventDefault();if(!canDispatch())return;const f=e.currentTarget,raw=Object.fromEntries(new FormData(f)),sel=selectedDrivers('#ride-driver-list'),vehicle=fleet.find(v=>v.id===raw.vehicle),existing=rides.find(r=>r.id===raw.id);const payload={customer_name:raw.customer,customer_phone:raw.phone||null,pickup:raw.pickup,destination:raw.destination,ride_date:raw.date,ride_time:raw.time,assigned_driver:sel.ids[0]||null,driver_name:sel.names[0]||null,assigned_drivers:sel.ids,driver_names:sel.names,vehicle_id:raw.vehicle||null,vehicle_name:vehicle?.name||null,status:raw.status,ride_type:raw.type,note:raw.note||null};const result=raw.id?await db.from('rides').update(payload).eq('id',raw.id):await db.from('rides').insert(payload);if(result.error){alert('Fahrt konnte nicht gespeichert werden: '+result.error.message);return}$('#ride-dialog').close()});
+$('#ride-form').addEventListener('submit',async e=>{
+e.preventDefault();
+if(!canDispatch())return;
+
+const f=e.currentTarget;
+const raw=Object.fromEntries(new FormData(f));
+const mode=$('#ride-mode-value').value||'single';
+const vehicle=fleet.find(v=>v.id===raw.vehicle);
+
+let ids=[],names=[],customerName='',customerPhone=null,pickup='',destination='',passengers=[];
+
+if(mode==='single'){
+  const driverId=$('#single-driver-select').value;
+  if(driverId){
+    ids=[driverId];
+    names=[drivers.find(d=>d.id===driverId)?.full_name].filter(Boolean)
+  }
+
+  customerName=(raw.customer||'').trim();
+  customerPhone=(raw.phone||'').trim()||null;
+  pickup=(raw.pickup||'').trim();
+  destination=(raw.destination||'').trim();
+
+  if(!customerName||!pickup||!destination){
+    alert('Bitte Kunde, Abholort und Zielort ausfüllen.');
+    return
+  }
+}else{
+  passengers=collectGroupPassengers();
+
+  if(!passengers.length||passengers.some(p=>!p.name||!p.pickup||!p.destination)){
+    alert('Bitte bei allen Personen Name, Abholort und Zielort ausfüllen.');
+    return
+  }
+
+  ids=[...groupDriverSelection];
+  names=ids.map(id=>drivers.find(d=>d.id===id)?.full_name).filter(Boolean);
+
+  customerName=`Mehrpersonenfahrt (${passengers.length} Personen)`;
+  customerPhone=passengers[0]?.phone||null;
+  pickup=passengers[0]?.pickup||'Mehrere Abholorte';
+  destination=passengers[0]?.destination||'Mehrere Ziele'
+}
+
+const payload={
+  ride_mode:mode,
+  customer_name:customerName,
+  customer_phone:customerPhone,
+  pickup,
+  destination,
+  ride_date:raw.date,
+  ride_time:raw.time,
+  assigned_driver:ids[0]||null,
+  driver_name:names[0]||null,
+  assigned_drivers:ids,
+  driver_names:names,
+  vehicle_id:raw.vehicle||null,
+  vehicle_name:vehicle?.name||null,
+  status:raw.status,
+  ride_type:raw.type,
+  note:raw.note||null
+};
+
+let rideId=raw.id||null;
+
+if(rideId){
+  const {error}=await db.from('rides').update(payload).eq('id',rideId);
+  if(error){
+    alert('Fahrt konnte nicht gespeichert werden: '+error.message);
+    return
+  }
+}else{
+  const {data,error}=await db.from('rides').insert(payload).select('id').single();
+  if(error){
+    alert('Fahrt konnte nicht gespeichert werden: '+error.message);
+    return
+  }
+  rideId=data.id
+}
+
+await db.from('ride_passengers').delete().eq('ride_id',rideId);
+
+if(mode==='group'&&passengers.length){
+  const rows=passengers.map(p=>({...p,ride_id:rideId}));
+  const {error}=await db.from('ride_passengers').insert(rows);
+
+  if(error){
+    alert('Fahrt gespeichert, aber Personendaten konnten nicht vollständig gespeichert werden: '+error.message);
+    return
+  }
+}
+
+$('#ride-dialog').close();
+await loadData()
+});
+
 $('#vehicle-form').addEventListener('submit',async e=>{e.preventDefault();const raw=Object.fromEntries(new FormData(e.currentTarget));const payload={name:raw.name,plate:raw.plate.toUpperCase(),location:raw.location,status:raw.status,fuel_level:raw.fuel,cleanliness:raw.cleanliness,mileage:Number(raw.mileage||0),current_driver_name:raw.driver||null,note:raw.note||null};const result=raw.id?await db.from('vehicles').update(payload).eq('id',raw.id):await db.from('vehicles').insert(payload);if(result.error)alert(result.error.message);else $('#vehicle-dialog').close()});
 function renderCalendar(){const grid=$('#calendar-grid');if(!grid)return;const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth();$('#calendar-title').textContent=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'}).format(calendarCursor);grid.innerHTML='';let first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();for(let i=0;i<offset;i++)grid.insertAdjacentHTML('beforeend','<span class="calendar-blank"></span>');for(let day=1;day<=days;day++){const d=isoDate(new Date(y,m,day)),list=rides.filter(r=>r.ride_date===d),today=d===isoDate(new Date());grid.insertAdjacentHTML('beforeend',`<button class="calendar-day ${today?'today':''} ${list.length?'has-rides':''}" data-calendar-date="${d}"><span>${day}</span><strong>${list.length?list.length+' Fahrt'+(list.length===1?'':'en'):''}</strong><div>${list.slice(0,3).map(r=>`<i>${escapeHtml((r.ride_time||'').slice(0,5))} ${escapeHtml(r.customer_name)}</i>`).join('')}</div></button>`)}$$('[data-calendar-date]').forEach(b=>b.addEventListener('click',()=>openDay(b.dataset.calendarDate)))}
 function openDay(date){selectedCalendarDate=date;const list=rides.filter(r=>r.ride_date===date);$('#day-dialog-title').textContent=`Fahrten am ${formatDate(date)}`;$('#day-rides-list').innerHTML=list.length?list.map(r=>`<article class="day-ride"><div><strong>${escapeHtml((r.ride_time||'').slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><span>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</span><small>${escapeHtml(driverLabel(r))}${r.is_recurring?' · ↻ Wiederholung':''}</small></div><div><button data-day-edit="${r.id}">Bearbeiten</button>${r.is_recurring&&canDispatch()?`<button class="danger-link" data-day-skip="${r.id}">Nur heute aussetzen</button>`:''}</div></article>`).join(''):'<div class="empty">An diesem Tag sind keine Fahrten eingetragen.</div>';$$('[data-day-edit]').forEach(b=>b.onclick=()=>{$('#day-dialog').close();openRide(rides.find(r=>r.id===b.dataset.dayEdit))});$$('[data-day-skip]').forEach(b=>b.onclick=async()=>{$('#day-dialog').close();await deleteRide(b.dataset.daySkip)});$('#day-dialog').showModal()}
