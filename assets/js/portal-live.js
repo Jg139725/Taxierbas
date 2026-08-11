@@ -44,6 +44,81 @@ async function confirmDriverRide(rideId){
   return true
 }
 
+
+function encodeMapsPoint(value){
+  return encodeURIComponent(String(value||"").trim())
+}
+
+function buildGoogleMapsRoute(ride,coords){
+  const passengers=ridePassengers
+    .filter(p=>p.ride_id===ride.id)
+    .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+
+  const origin=coords?`${coords.latitude},${coords.longitude}`:"";
+  let destination=ride.destination||"";
+  let waypoints=[];
+
+  if(ride.ride_mode==="group"&&passengers.length){
+    const points=[];
+    passengers.forEach(p=>{
+      if(p.pickup)points.push(p.pickup);
+      if(p.destination)points.push(p.destination)
+    });
+
+    if(points.length){
+      destination=points[points.length-1];
+      waypoints=points.slice(0,-1)
+    }
+  }else{
+    if(ride.pickup)waypoints=[ride.pickup]
+  }
+
+  const params=new URLSearchParams({
+    api:"1",
+    travelmode:"driving",
+    destination
+  });
+
+  if(origin)params.set("origin",origin);
+  if(waypoints.length)params.set("waypoints",waypoints.join("|"));
+
+  return `https://www.google.com/maps/dir/?${params.toString()}`
+}
+
+function openGoogleMapsNavigation(ride){
+  if(!ride)return;
+
+  const openRoute=coords=>{
+    const url=buildGoogleMapsRoute(ride,coords);
+    window.open(url,"_blank","noopener,noreferrer")
+  };
+
+  if(!navigator.geolocation){
+    openRoute(null);
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    position=>{
+      openRoute({
+        latitude:position.coords.latitude,
+        longitude:position.coords.longitude
+      })
+    },
+    ()=>{
+      const proceed=confirm(
+        "Dein aktueller Standort konnte nicht gelesen werden. Soll die Route trotzdem in Google Maps geöffnet werden? Google Maps kann deinen Standort dort selbst verwenden."
+      );
+      if(proceed)openRoute(null)
+    },
+    {
+      enableHighAccuracy:true,
+      timeout:10000,
+      maximumAge:60000
+    }
+  )
+}
+
 function openDriverRideDetail(ride){
   if(!ride)return;
   selectedDriverDetailRideId=ride.id;
@@ -63,6 +138,16 @@ function openDriverRideDetail(ride){
       <div class="driver-detail-card"><small>Fahrtart</small><strong>${escapeHtml(ride.ride_type||"Taxifahrt")}</strong></div>
       <div class="driver-detail-card full"><small>Kunde / Fahrgast</small><strong>${escapeHtml(ride.customer_name||"–")}</strong>${ride.customer_phone?`<span>📞 ${escapeHtml(ride.customer_phone)}</span>`:""}</div>
       <div class="driver-detail-card full"><small>Route</small><strong>📍 ${escapeHtml(ride.pickup||"–")}</strong><span class="route-down">↓</span><strong>🏁 ${escapeHtml(ride.destination||"–")}</strong></div>
+      <div class="driver-navigation-card full">
+        <div>
+          <small>Navigation</small>
+          <strong>Aktueller Standort → Abholung → Ziel</strong>
+          <span>${ride.ride_mode==="group"?"Alle eingetragenen Personen und Stopps werden der Reihe nach übernommen.":"Google Maps übernimmt Abholort und Ziel automatisch."}</span>
+        </div>
+        <button type="button" class="maps-navigation-btn" data-start-google-navigation="${ride.id}">
+          🗺️ Navigation starten
+        </button>
+      </div>
       <div class="driver-detail-card"><small>Fahrzeug</small><strong>${escapeHtml(ride.vehicle_name||"Noch offen")}</strong></div>
       <div class="driver-detail-card"><small>Fahrer</small><strong>${escapeHtml(driverLabel(ride))}</strong></div>
       ${ride.note?`<div class="driver-detail-card full"><small>Hinweis</small><strong>${escapeHtml(ride.note)}</strong></div>`:""}
@@ -84,6 +169,15 @@ function openDriverRideDetail(ride){
     `:""}
   `;
 
+
+  const mapsBtn=$("[data-start-google-navigation]");
+  if(mapsBtn){
+    mapsBtn.onclick=()=>{
+      const currentRide=rides.find(r=>r.id===mapsBtn.dataset.startGoogleNavigation);
+      openGoogleMapsNavigation(currentRide)
+    }
+  }
+
   const btn=$("#driver-detail-confirm");
   btn.style.display=confirmed?"none":"";
   btn.disabled=false;
@@ -94,7 +188,7 @@ function openDriverRideDetail(ride){
 function bindDriverRideDetails(){
   $$("[data-driver-ride-detail]").forEach(el=>{
     el.onclick=e=>{
-      if(e.target.closest("[data-confirm-ride]")||e.target.closest("select"))return;
+      if(e.target.closest("[data-confirm-ride]")||e.target.closest("[data-quick-navigation]")||e.target.closest("select"))return;
       openDriverRideDetail(rides.find(r=>r.id===el.dataset.driverRideDetail))
     }
   })
@@ -205,7 +299,7 @@ if(profile?.role==="driver"){
       </div>
       <div class="ride-actions">
         ${!confirmed?`<button class="confirm-ride-btn" data-confirm-ride="${r.id}">✓ Bestätigen</button>`:""}
-        <button class="driver-details-btn" data-driver-ride-detail="${r.id}">Details ansehen</button>
+        <button class="driver-details-btn" data-driver-ride-detail="${r.id}">Details ansehen</button><button class="maps-quick-btn" data-quick-navigation="${r.id}">🗺️ Route</button>
         ${confirmed?`<select data-ride-status="${r.id}">${["Zugewiesen","Unterwegs","Abgeschlossen"].map(st=>`<option ${st===r.status?"selected":""}>${st}</option>`).join("")}</select>`:""}
       </div>
     </article>`
@@ -214,6 +308,12 @@ if(profile?.role==="driver"){
   $$("[data-confirm-ride]").forEach(btn=>btn.addEventListener("click",async e=>{
     e.stopPropagation();
     await confirmDriverRide(btn.dataset.confirmRide)
+  }));
+
+
+  $$("[data-quick-navigation]").forEach(btn=>btn.addEventListener("click",e=>{
+    e.stopPropagation();
+    openGoogleMapsNavigation(rides.find(r=>r.id===btn.dataset.quickNavigation))
   }));
 
   $$("[data-ride-status]").forEach(sel=>sel.addEventListener("change",async e=>{
@@ -554,7 +654,7 @@ if(profile?.role==="driver"){
       <div class="driver-calendar-actions">
         <span class="confirmation-pill ${confirmed?"confirmed":c?.status==="declined"?"declined":"pending"}">${escapeHtml(confirmationLabel(r))}</span>
         ${!confirmed?`<button class="confirm-ride-btn" data-confirm-ride="${r.id}">✓ Bestätigen</button>`:""}
-        <button class="driver-details-btn" data-driver-ride-detail="${r.id}">Übersicht</button>
+        <button class="driver-details-btn" data-driver-ride-detail="${r.id}">Übersicht</button><button class="maps-quick-btn" data-quick-navigation="${r.id}">🗺️ Route</button>
       </div>
     </article>`
   }).join(""):'<div class="empty">An diesem Tag sind dir keine Fahrten zugewiesen.</div>';
@@ -564,6 +664,12 @@ if(profile?.role==="driver"){
   $$("[data-confirm-ride]").forEach(btn=>btn.addEventListener("click",async e=>{
     e.stopPropagation();
     if(await confirmDriverRide(btn.dataset.confirmRide))openDay(date)
+  }));
+
+
+  $$("[data-quick-navigation]").forEach(btn=>btn.addEventListener("click",e=>{
+    e.stopPropagation();
+    openGoogleMapsNavigation(rides.find(r=>r.id===btn.dataset.quickNavigation))
   }));
 
   bindDriverRideDetails();
