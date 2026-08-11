@@ -1,7 +1,7 @@
 (() => {
 "use strict";
 const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.3 geladen");
-let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],realtimeChannel=null,clockTimer=null;
+let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],rideConfirmations=[],realtimeChannel=null,clockTimer=null;
 let calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=null,knownRideIds=new Set();
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
@@ -11,6 +11,95 @@ const canDispatch=()=>["admin","dispatcher"].includes(profile?.role);
 const rideDriverIds=r=>Array.isArray(r.assigned_drivers)&&r.assigned_drivers.length?r.assigned_drivers:(r.assigned_driver?[r.assigned_driver]:[]);
 const rideDriverNames=r=>Array.isArray(r.driver_names)&&r.driver_names.length?r.driver_names:(r.driver_name?[r.driver_name]:[]);
 const driverLabel=r=>rideDriverNames(r).length?rideDriverNames(r).join(" + "):"Fahrer offen";
+const isMine=r=>profile?.role!=="driver"||rideDriverIds(r).includes(profile.id);
+const myConfirmation=r=>rideConfirmations.find(c=>c.ride_id===r.id&&c.driver_id===profile?.id);
+const confirmationLabel=r=>{
+  const c=myConfirmation(r);
+  if(!c)return "Noch nicht bestätigt";
+  if(c.status==="confirmed")return "Bestätigt";
+  if(c.status==="declined")return "Abgelehnt";
+  return "Noch nicht bestätigt";
+};
+const driverTodayRides=()=>{
+  const today=isoDate(new Date());
+  return rides.filter(r=>isMine(r)&&r.ride_date===today)
+    .sort((a,b)=>String(a.ride_time||"").localeCompare(String(b.ride_time||"")));
+};
+const driverVehiclesToday=()=>{
+  const ids=new Set(driverTodayRides().map(r=>r.vehicle_id).filter(Boolean));
+  return fleet.filter(v=>ids.has(v.id));
+};
+
+let selectedDriverDetailRideId=null;
+
+async function confirmDriverRide(rideId){
+  const {error}=await db.from("ride_confirmations").upsert({
+    ride_id:rideId,
+    driver_id:profile.id,
+    status:"confirmed",
+    confirmed_at:new Date().toISOString()
+  },{onConflict:"ride_id,driver_id"});
+  if(error){alert("Fahrt konnte nicht bestätigt werden: "+error.message);return false}
+  await loadData();
+  return true
+}
+
+function openDriverRideDetail(ride){
+  if(!ride)return;
+  selectedDriverDetailRideId=ride.id;
+  const c=myConfirmation(ride);
+  const confirmed=c?.status==="confirmed";
+  const passengers=ridePassengers.filter(p=>p.ride_id===ride.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+
+  $("#driver-detail-title").textContent=`${(ride.ride_time||"").slice(0,5)} Uhr · ${ride.customer_name||"Fahrt"}`;
+  $("#driver-detail-content").innerHTML=`
+    <div class="driver-detail-status">
+      <span class="${badgeClass(ride.status)}">${escapeHtml(ride.status)}</span>
+      <span class="confirmation-pill ${confirmed?"confirmed":c?.status==="declined"?"declined":"pending"}">${escapeHtml(confirmationLabel(ride))}</span>
+    </div>
+
+    <div class="driver-detail-grid">
+      <div class="driver-detail-card"><small>Datum & Uhrzeit</small><strong>${formatDate(ride.ride_date)} · ${(ride.ride_time||"").slice(0,5)} Uhr</strong></div>
+      <div class="driver-detail-card"><small>Fahrtart</small><strong>${escapeHtml(ride.ride_type||"Taxifahrt")}</strong></div>
+      <div class="driver-detail-card full"><small>Kunde / Fahrgast</small><strong>${escapeHtml(ride.customer_name||"–")}</strong>${ride.customer_phone?`<span>📞 ${escapeHtml(ride.customer_phone)}</span>`:""}</div>
+      <div class="driver-detail-card full"><small>Route</small><strong>📍 ${escapeHtml(ride.pickup||"–")}</strong><span class="route-down">↓</span><strong>🏁 ${escapeHtml(ride.destination||"–")}</strong></div>
+      <div class="driver-detail-card"><small>Fahrzeug</small><strong>${escapeHtml(ride.vehicle_name||"Noch offen")}</strong></div>
+      <div class="driver-detail-card"><small>Fahrer</small><strong>${escapeHtml(driverLabel(ride))}</strong></div>
+      ${ride.note?`<div class="driver-detail-card full"><small>Hinweis</small><strong>${escapeHtml(ride.note)}</strong></div>`:""}
+    </div>
+
+    ${passengers.length?`
+      <div class="driver-detail-card full">
+        <small>Personen dieser Mehrpersonenfahrt</small>
+        <div class="driver-passenger-list">
+          ${passengers.map((p,i)=>`
+            <div class="driver-passenger-row">
+              <strong>${i+1}. ${escapeHtml(p.name||p.customer_name||"Person")}</strong>
+              ${p.phone?`<span>📞 ${escapeHtml(p.phone)}</span>`:""}
+              <span>📍 ${escapeHtml(p.pickup)} → ${escapeHtml(p.destination)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `:""}
+  `;
+
+  const btn=$("#driver-detail-confirm");
+  btn.style.display=confirmed?"none":"";
+  btn.disabled=false;
+  btn.textContent="✓ Fahrt bestätigen";
+  $("#driver-ride-detail-dialog").showModal()
+}
+
+function bindDriverRideDetails(){
+  $$("[data-driver-ride-detail]").forEach(el=>{
+    el.onclick=e=>{
+      if(e.target.closest("[data-confirm-ride]")||e.target.closest("select"))return;
+      openDriverRideDetail(rides.find(r=>r.id===el.dataset.driverRideDetail))
+    }
+  })
+}
+
 function showError(m){$("#login-error").textContent=m||"Es ist ein Fehler aufgetreten."}
 function badgeClass(v){if(["Werkstatt","Nicht verfügbar","Reinigung erforderlich","Reserve"].includes(v))return"badge danger";if(["Unterwegs","Leicht verschmutzt","¼ voll","Halbvoll","Offen"].includes(v))return"badge warn";return"badge"}
 async function loadProfile(){const{data,error}=await db.from("profiles").select("id,full_name,role,active").eq("id",session.user.id).single();if(error)throw new Error("Mitarbeiterprofil konnte nicht geladen werden.");if(!data.active)throw new Error("Dieser Mitarbeiterzugang wurde deaktiviert.");profile=data}
@@ -20,7 +109,8 @@ await refreshRecurring();
 const calls=[
   db.from("rides").select("*").order("ride_date").order("ride_time"),
   db.from("vehicles").select("*").order("name"),
-  db.from("ride_passengers").select("*").order("sort_order")
+  db.from("ride_passengers").select("*").order("sort_order"),
+  db.from("ride_confirmations").select("*")
 ];
 if(canDispatch()){
   calls.push(
@@ -34,12 +124,13 @@ if(results[1].error)throw results[1].error;
 rides=results[0].data||[];
 fleet=results[1].data||[];
 ridePassengers=results[2].error?[]:(results[2].data||[]);
-drivers=canDispatch()&&!results[3]?.error?(results[3].data||[]):[];
-series=canDispatch()&&!results[4]?.error?(results[4].data||[]):[];
+rideConfirmations=results[3].error?[]:(results[3].data||[]);
+drivers=canDispatch()&&!results[4]?.error?(results[4].data||[]):[];
+series=canDispatch()&&!results[5]?.error?(results[5].data||[]):[];
 knownRideIds=new Set(rides.map(r=>r.id));
 renderAll()
 }
-function subscribeRealtime(){if(realtimeChannel)db.removeChannel(realtimeChannel);realtimeChannel=db.channel("taxi-erbas-live").on("postgres_changes",{event:"*",schema:"public",table:"rides"},p=>{notifyRide(p);loadData()}).on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"profiles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"recurring_series"},loadData).subscribe()}
+function subscribeRealtime(){if(realtimeChannel)db.removeChannel(realtimeChannel);realtimeChannel=db.channel("taxi-erbas-live").on("postgres_changes",{event:"*",schema:"public",table:"rides"},p=>{notifyRide(p);loadData()}).on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"profiles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"recurring_series"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"ride_confirmations"},loadData).subscribe()}
 function startClock(){const f=()=>{const n=new Date();if($("#dispatch-clock"))$("#dispatch-clock").textContent=n.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});if($("#dispatch-date"))$("#dispatch-date").textContent=n.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})};f();clearInterval(clockTimer);clockTimer=setInterval(f,30000)}
 function updateNotificationUI(){const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;const state=Notification.permission;s.textContent=state==="granted"?"aktiv":state==="denied"?"im Browser blockiert":"nicht aktiviert";b.classList.toggle("notification-on",state==="granted")}
 async function enableNotifications(){if(!("Notification"in window)){alert("Dieser Browser unterstützt Benachrichtigungen nicht.");return}const p=await Notification.requestPermission();updateNotificationUI();if(p==="granted"){const reg=await navigator.serviceWorker?.ready;reg?.showNotification("Taxi Erbas",{body:"Benachrichtigungen sind aktiviert.",icon:"assets/images/taxi-erbas-original-logo.png"})}}
@@ -51,11 +142,105 @@ $('#reset-demo').addEventListener('click',loadData);$('#notification-button').ad
 $$('.nav-button').forEach(btn=>btn.addEventListener('click',()=>{$$('.nav-button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$$('.view').forEach(v=>v.classList.remove('active'));$('#view-'+btn.dataset.view).classList.add('active');$('#page-title').textContent=btn.textContent;$('.sidebar').classList.remove('open');if(btn.dataset.view==='calendar')renderCalendar()}));
 function driverState(d){const ar=rides.find(r=>rideDriverIds(r).includes(d.id)&&["Zugewiesen","Unterwegs"].includes(r.status));if(!d.active)return{label:'Deaktiviert',className:'offline',ride:null};if(ar?.status==='Unterwegs')return{label:'Unterwegs',className:'busy',ride:ar};if(ar)return{label:'Zugewiesen',className:'reserved',ride:ar};return{label:'Frei',className:'free',ride:null}}
 function renderDispatch(){if(!canDispatch()||!$('#dispatch-rides'))return;const open=rides.filter(r=>r.status!=='Abgeschlossen'),active=rides.filter(r=>r.status==='Unterwegs'),freeV=fleet.filter(v=>v.status==='Verfügbar'),freeD=drivers.filter(d=>driverState(d).label==='Frei');$('#dispatch-open-count').textContent=open.length;$('#dispatch-free-vehicles').textContent=freeV.length;$('#dispatch-free-drivers').textContent=freeD.length;$('#dispatch-active-count').textContent=active.length;$('#dispatch-vehicles').innerHTML=fleet.length?fleet.map(v=>`<button class="dispatch-item dispatch-vehicle-item ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}" data-edit-vehicle="${v.id}"><span class="vehicle-icon">🚕</span><span class="dispatch-item-copy"><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.plate)}</small><em>${escapeHtml(v.location)} · ${escapeHtml(v.fuel_level)}</em></span><span class="visual-status ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}"><i></i>${escapeHtml(v.status)}</span></button>`).join(''):'<div class="empty">Noch keine Fahrzeuge.</div>';$('#dispatch-rides').innerHTML=open.length?open.map(r=>`<article class="dispatch-ride ${r.status==='Unterwegs'?'ride-active':r.status==='Zugewiesen'?'ride-assigned':'ride-open'}"><div class="dispatch-ride-time"><strong>${escapeHtml((r.ride_time||'').slice(0,5)||'–')}</strong><span>${formatDate(r.ride_date)}</span></div><div class="dispatch-route"><div class="route-point pickup"><i></i><span><small>Abholung</small><strong>${escapeHtml(r.pickup)}</strong></span></div><div class="route-line"></div><div class="route-point destination"><i></i><span><small>Ziel</small><strong>${escapeHtml(r.destination)}</strong></span></div></div><div class="dispatch-ride-copy"><strong>${escapeHtml(r.customer_name)}</strong><div><span>👨‍✈️ ${escapeHtml(driverLabel(r))}</span><span>🚕 ${escapeHtml(r.vehicle_name||'Fahrzeug offen')}</span>${r.is_recurring?'<span>↻ Serie</span>':''}</div></div><div class="dispatch-ride-actions"><span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span><button data-edit-ride="${r.id}">Bearbeiten</button></div></article>`).join(''):'<div class="empty">Keine offenen Fahrten.</div>';$('#dispatch-drivers').innerHTML=drivers.length?drivers.map(d=>{const st=driverState(d);return`<article class="dispatch-item driver-item ${st.className}"><span class="driver-avatar">${escapeHtml((d.full_name||'?').charAt(0).toUpperCase())}</span><span class="dispatch-item-copy"><strong>${escapeHtml(d.full_name)}</strong><small>${st.ride?'Aktuell: '+escapeHtml(st.ride.destination):'Bereit für neue Fahrt'}</small></span><span class="visual-status ${st.className}"><i></i>${st.label}</span></article>`}).join(''):'<div class="empty">Noch keine Fahrer.</div>';bindEditButtons()}
-function renderStats(){const today=isoDate(new Date());$('#stat-today').textContent=rides.filter(r=>r.ride_date===today).length;$('#stat-open').textContent=rides.filter(r=>r.status==='Offen').length;$('#stat-active').textContent=rides.filter(r=>r.status==='Unterwegs').length;$('#stat-available').textContent=fleet.filter(v=>v.status==='Verfügbar').length}
-function renderOverview(){const upcoming=rides.filter(r=>r.status!=='Abgeschlossen').slice(0,5);$('#upcoming-rides').innerHTML=upcoming.length?upcoming.map(r=>`<div class="compact-item"><div><strong>${escapeHtml((r.ride_time||'').slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><small>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</small></div><span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span></div>`).join(''):'<div class="empty">Keine kommenden Fahrten.</div>';$('#fleet-summary').innerHTML=fleet.map(v=>`<div class="compact-item"><div><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.location)} · ${escapeHtml(v.fuel_level)}</small></div><span class="${badgeClass(v.status)}">${escapeHtml(v.status)}</span></div>`).join('')}
-function renderRides(){const visible=canDispatch()?rides:rides.filter(isMine);$('#rides-list').innerHTML=visible.length?visible.map(r=>`<article class="ride-card"><div class="ride-time"><strong>${escapeHtml((r.ride_time||'').slice(0,5))}</strong><span>${formatDate(r.ride_date)}</span></div><div class="ride-main"><h3>${escapeHtml(r.customer_name)} ${r.is_recurring?'<small class="series-chip">↻ Serie</small>':''}</h3><p>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</p><div class="ride-meta"><span class="pill">${escapeHtml(driverLabel(r))}</span><span class="pill">${escapeHtml(r.vehicle_name||'Fahrzeug offen')}</span><span class="pill">${escapeHtml(r.ride_type)}</span></div></div><div class="ride-actions"><select data-ride-status="${r.id}">${["Offen","Zugewiesen","Unterwegs","Abgeschlossen"].map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select>${canDispatch()?`<button data-edit-ride="${r.id}">Bearbeiten</button><button data-delete-ride="${r.id}">${r.is_recurring?'Einmal aussetzen':'Löschen'}</button>`:''}</div></article>`).join(''):'<div class="empty">Noch keine Fahrten.</div>';$$('[data-ride-status]').forEach(el=>el.addEventListener('change',async()=>{const{error}=await db.from('rides').update({status:el.value}).eq('id',el.dataset.rideStatus);if(error)alert(error.message)}));$$('[data-delete-ride]').forEach(b=>b.addEventListener('click',()=>deleteRide(b.dataset.deleteRide)));bindEditButtons()}
+function renderStats(){
+const today=isoDate(new Date());
+if(profile?.role==="driver"){
+  const mine=driverTodayRides();
+  $("#stat-today").textContent=mine.length;
+  $("#stat-open").textContent=mine.filter(r=>r.status==="Offen"||r.status==="Zugewiesen").length;
+  $("#stat-active").textContent=mine.filter(r=>r.status==="Unterwegs").length;
+  $("#stat-available").textContent=driverVehiclesToday().length;
+  return
+}
+$("#stat-today").textContent=rides.filter(r=>r.ride_date===today).length;
+$("#stat-open").textContent=rides.filter(r=>r.status==="Offen").length;
+$("#stat-active").textContent=rides.filter(r=>r.status==="Unterwegs").length;
+$("#stat-available").textContent=fleet.filter(v=>v.status==="Verfügbar").length
+}
+function renderOverview(){
+if(profile?.role==="driver"){
+  const mine=driverTodayRides();
+  const vehicles=driverVehiclesToday();
+
+  $("#upcoming-rides").innerHTML=mine.length?mine.map(r=>{
+    const c=myConfirmation(r);
+    return `<button type="button" class="compact-item driver-overview-ride" data-driver-ride-detail="${r.id}">
+      <div><strong>${escapeHtml((r.ride_time||"").slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><small>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</small></div>
+      <span class="confirmation-pill ${c?.status==="confirmed"?"confirmed":c?.status==="declined"?"declined":"pending"}">${escapeHtml(confirmationLabel(r))}</span>
+    </button>`
+  }).join(""):'<div class="empty">Für heute sind dir keine Fahrten zugewiesen.</div>';
+
+  $("#fleet-summary").innerHTML=vehicles.length?vehicles.map(v=>`
+    <div class="compact-item"><div><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.plate||"")} · ${escapeHtml(v.location||"Standort offen")}</small></div><span class="${badgeClass(v.status)}">${escapeHtml(v.status)}</span></div>
+  `).join(""):'<div class="empty">Für deine heutigen Fahrten ist noch kein Fahrzeug eingetragen.</div>';
+
+  const panel=$("#fleet-summary")?.closest(".panel");
+  if(panel?.querySelector("h3"))panel.querySelector("h3").textContent="Meine Fahrzeuge heute";
+  if(panel?.querySelector(".panel-head span"))panel.querySelector(".panel-head span").textContent="Nur deine zugewiesenen Fahrzeuge";
+
+  bindDriverRideDetails();
+  return
+}
+
+const upcoming=rides.filter(r=>r.status!=="Abgeschlossen").slice(0,5);
+$("#upcoming-rides").innerHTML=upcoming.length?upcoming.map(r=>`<div class="compact-item"><div><strong>${escapeHtml((r.ride_time||"").slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><small>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</small></div><span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span></div>`).join(""):'<div class="empty">Keine kommenden Fahrten.</div>';
+$("#fleet-summary").innerHTML=fleet.map(v=>`<div class="compact-item"><div><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.location)} · ${escapeHtml(v.fuel_level)}</small></div><span class="${badgeClass(v.status)}">${escapeHtml(v.status)}</span></div>`).join("")
+}
+function renderRides(){
+if(profile?.role==="driver"){
+  const visible=driverTodayRides();
+
+  $("#rides-list").innerHTML=visible.length?visible.map(r=>{
+    const c=myConfirmation(r),confirmed=c?.status==="confirmed";
+    return `<article class="ride-card driver-day-ride-card" data-driver-ride-detail="${r.id}">
+      <div class="ride-time"><strong>${escapeHtml((r.ride_time||"").slice(0,5))}</strong><span>${formatDate(r.ride_date)}</span></div>
+      <div class="ride-main">
+        <h3>${escapeHtml(r.customer_name)}</h3>
+        <p>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</p>
+        <div class="ride-meta">
+          <span class="pill">🚕 ${escapeHtml(r.vehicle_name||"Fahrzeug offen")}</span>
+          <span class="pill">${escapeHtml(r.ride_type||"Taxifahrt")}</span>
+          <span class="confirmation-pill ${confirmed?"confirmed":c?.status==="declined"?"declined":"pending"}">${escapeHtml(confirmationLabel(r))}</span>
+        </div>
+      </div>
+      <div class="ride-actions">
+        ${!confirmed?`<button class="confirm-ride-btn" data-confirm-ride="${r.id}">✓ Bestätigen</button>`:""}
+        <button class="driver-details-btn" data-driver-ride-detail="${r.id}">Details ansehen</button>
+        ${confirmed?`<select data-ride-status="${r.id}">${["Zugewiesen","Unterwegs","Abgeschlossen"].map(st=>`<option ${st===r.status?"selected":""}>${st}</option>`).join("")}</select>`:""}
+      </div>
+    </article>`
+  }).join(""):'<div class="empty">Für heute sind dir keine Fahrten zugewiesen.</div>';
+
+  $$("[data-confirm-ride]").forEach(btn=>btn.addEventListener("click",async e=>{
+    e.stopPropagation();
+    await confirmDriverRide(btn.dataset.confirmRide)
+  }));
+
+  $$("[data-ride-status]").forEach(sel=>sel.addEventListener("change",async e=>{
+    e.stopPropagation();
+    const {error}=await db.from("rides").update({status:sel.value}).eq("id",sel.dataset.rideStatus);
+    if(error){alert(error.message);await loadData()}
+  }));
+
+  bindDriverRideDetails();
+  return
+}
+
+const visible=rides;
+$("#rides-list").innerHTML=visible.length?visible.map(r=>`<article class="ride-card"><div class="ride-time"><strong>${escapeHtml((r.ride_time||"").slice(0,5))}</strong><span>${formatDate(r.ride_date)}</span></div><div class="ride-main"><h3>${escapeHtml(r.customer_name)} ${r.is_recurring?'<small class="series-chip">↻ Serie</small>':""}</h3><p>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</p><div class="ride-meta"><span class="pill">${escapeHtml(driverLabel(r))}</span><span class="pill">${escapeHtml(r.vehicle_name||"Fahrzeug offen")}</span><span class="pill">${escapeHtml(r.ride_type)}</span></div></div><div class="ride-actions"><select data-ride-status="${r.id}">${["Offen","Zugewiesen","Unterwegs","Abgeschlossen"].map(st=>`<option ${st===r.status?"selected":""}>${st}</option>`).join("")}</select><button data-edit-ride="${r.id}">Bearbeiten</button><button data-delete-ride="${r.id}">${r.is_recurring?"Einmal aussetzen":"Löschen"}</button></div></article>`).join(""):'<div class="empty">Noch keine Fahrten.</div>';
+$$("[data-ride-status]").forEach(el=>el.addEventListener("change",async()=>{const{error}=await db.from("rides").update({status:el.value}).eq("id",el.dataset.rideStatus);if(error)alert(error.message)}));
+$$("[data-delete-ride]").forEach(b=>b.addEventListener("click",()=>deleteRide(b.dataset.deleteRide)));
+bindEditButtons()
+}
 async function deleteRide(id){const r=rides.find(x=>x.id===id);if(!r)return;if(r.is_recurring&&r.series_id){if(!confirm('Nur diesen einzelnen Termin der Wiederholungsfahrt aussetzen? Die Serie bleibt bestehen.'))return;const{error}=await db.rpc('cancel_recurring_occurrence',{p_series:r.series_id,p_date:r.occurrence_date||r.ride_date});if(error)alert(error.message)}else{if(!confirm('Diese Fahrt wirklich löschen?'))return;const{error}=await db.from('rides').delete().eq('id',id);if(error)alert(error.message)}}
-function renderFleet(){$('#fleet-list').innerHTML=fleet.length?fleet.map(v=>`<article class="vehicle-card"><div class="vehicle-head"><div><h3>${escapeHtml(v.name)}</h3><span>${escapeHtml(v.plate)}</span></div><span class="${badgeClass(v.status)}">${escapeHtml(v.status)}</span></div><div class="vehicle-status"><div><small>Standort</small><strong>${escapeHtml(v.location)}</strong></div><div><small>Tank</small><strong>${escapeHtml(v.fuel_level)}</strong></div><div><small>Sauberkeit</small><strong>${escapeHtml(v.cleanliness)}</strong></div><div><small>Kilometer</small><strong>${Number(v.mileage||0).toLocaleString('de-DE')} km</strong></div></div><p class="vehicle-note">${escapeHtml(v.note||'Keine Notiz')}</p><div class="vehicle-actions"><button data-edit-vehicle="${v.id}">Status ändern</button>${canDispatch()?`<button data-delete-vehicle="${v.id}">Löschen</button>`:''}</div></article>`).join(''):'<div class="empty">Noch keine Fahrzeuge.</div>';$$('[data-delete-vehicle]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Fahrzeug wirklich entfernen?'))return;const{error}=await db.from('vehicles').delete().eq('id',b.dataset.deleteVehicle);if(error)alert(error.message)}));bindEditButtons()}
+function renderFleet(){
+const source=profile?.role==="driver"?driverVehiclesToday():fleet;
+$("#fleet-list").innerHTML=source.length?source.map(v=>`<article class="vehicle-card"><div class="vehicle-head"><div><h3>${escapeHtml(v.name)}</h3><span>${escapeHtml(v.plate)}</span></div><span class="${badgeClass(v.status)}">${escapeHtml(v.status)}</span></div><div class="vehicle-status"><div><small>Standort</small><strong>${escapeHtml(v.location)}</strong></div><div><small>Tank</small><strong>${escapeHtml(v.fuel_level)}</strong></div><div><small>Sauberkeit</small><strong>${escapeHtml(v.cleanliness)}</strong></div><div><small>Kilometer</small><strong>${Number(v.mileage||0).toLocaleString("de-DE")} km</strong></div></div><p class="vehicle-note">${escapeHtml(v.note||"Keine Notiz")}</p>${canDispatch()?`<div class="vehicle-actions"><button data-edit-vehicle="${v.id}">Status ändern</button><button data-delete-vehicle="${v.id}">Löschen</button></div>`:""}</article>`).join(""):`<div class="empty">${profile?.role==="driver"?"Für deine heutigen Fahrten ist kein Fahrzeug eingetragen.":"Noch keine Fahrzeuge."}</div>`;
+if(canDispatch()){
+  $$("[data-delete-vehicle]").forEach(b=>b.addEventListener("click",async()=>{if(!confirm("Fahrzeug wirklich entfernen?"))return;const{error}=await db.from("vehicles").delete().eq("id",b.dataset.deleteVehicle);if(error)alert(error.message)}));
+  bindEditButtons()
+}
+}
 function driverCheckboxes(target,selected=[]){const el=$(target);el.innerHTML=drivers.filter(d=>d.active).map(d=>`<label><input type="checkbox" value="${d.id}" ${selected.includes(d.id)?'checked':''}><span>${escapeHtml(d.full_name)}</span></label>`).join('')||'<small>Keine Fahrer angelegt.</small>'}
 function selectedDrivers(target){const ids=$$(`${target} input:checked`).map(i=>i.value);return{ids,names:ids.map(id=>drivers.find(d=>d.id===id)?.full_name).filter(Boolean)}}
 function refreshVehicleOptions(select,selected=''){select.innerHTML='<option value="">Noch offen</option>'+fleet.map(v=>`<option value="${v.id}" ${v.id===selected?'selected':''}>${escapeHtml(v.name)} (${escapeHtml(v.plate)})</option>`).join('')}
@@ -221,6 +406,16 @@ $('#series-occurrence-info').hidden=!r?.is_recurring;
 $('#ride-dialog').showModal()
 }
 function openVehicle(v=null){const f=$('#vehicle-form');f.reset();f.elements.id.value=v?.id||'';f.elements.name.value=v?.name||'';f.elements.plate.value=v?.plate||'';f.elements.location.value=v?.location||'Betriebshof';f.elements.status.value=v?.status||'Verfügbar';f.elements.fuel.value=v?.fuel_level||'Voll';f.elements.cleanliness.value=v?.cleanliness||'Sauber';f.elements.mileage.value=v?.mileage||'';f.elements.driver.value=v?.current_driver_name||'';f.elements.note.value=v?.note||'';$('#vehicle-dialog').showModal()}
+$("#driver-detail-confirm")?.addEventListener("click",async()=>{
+  if(!selectedDriverDetailRideId)return;
+  const btn=$("#driver-detail-confirm");
+  btn.disabled=true;
+  btn.textContent="Wird bestätigt …";
+  if(await confirmDriverRide(selectedDriverDetailRideId)){
+    const ride=rides.find(r=>r.id===selectedDriverDetailRideId);
+    if(ride)openDriverRideDetail(ride)
+  }
+});
 function bindEditButtons(){$$('[data-edit-ride]').forEach(b=>b.onclick=()=>openRide(rides.find(r=>r.id===b.dataset.editRide)));$$('[data-edit-vehicle]').forEach(b=>b.onclick=()=>openVehicle(fleet.find(v=>v.id===b.dataset.editVehicle)))}
 $$('[data-ride-mode]').forEach(btn=>btn.addEventListener('click',()=>setRideMode(btn.dataset.rideMode)));
 $('#add-group-passenger')?.addEventListener('click',()=>addPassengerRow());
@@ -346,8 +541,44 @@ await loadData()
 
 $('#vehicle-form').addEventListener('submit',async e=>{e.preventDefault();const raw=Object.fromEntries(new FormData(e.currentTarget));const payload={name:raw.name,plate:raw.plate.toUpperCase(),location:raw.location,status:raw.status,fuel_level:raw.fuel,cleanliness:raw.cleanliness,mileage:Number(raw.mileage||0),current_driver_name:raw.driver||null,note:raw.note||null};const result=raw.id?await db.from('vehicles').update(payload).eq('id',raw.id):await db.from('vehicles').insert(payload);if(result.error)alert(result.error.message);else $('#vehicle-dialog').close()});
 function renderCalendar(){const grid=$('#calendar-grid');if(!grid)return;const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth();$('#calendar-title').textContent=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'}).format(calendarCursor);grid.innerHTML='';let first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();for(let i=0;i<offset;i++)grid.insertAdjacentHTML('beforeend','<span class="calendar-blank"></span>');for(let day=1;day<=days;day++){const d=isoDate(new Date(y,m,day)),list=rides.filter(r=>r.ride_date===d),today=d===isoDate(new Date());grid.insertAdjacentHTML('beforeend',`<button class="calendar-day ${today?'today':''} ${list.length?'has-rides':''}" data-calendar-date="${d}"><span>${day}</span><strong>${list.length?list.length+' Fahrt'+(list.length===1?'':'en'):''}</strong><div>${list.slice(0,3).map(r=>`<i>${escapeHtml((r.ride_time||'').slice(0,5))} ${escapeHtml(r.customer_name)}</i>`).join('')}</div></button>`)}$$('[data-calendar-date]').forEach(b=>b.addEventListener('click',()=>openDay(b.dataset.calendarDate)))}
-function openDay(date){selectedCalendarDate=date;const list=rides.filter(r=>r.ride_date===date);$('#day-dialog-title').textContent=`Fahrten am ${formatDate(date)}`;$('#day-rides-list').innerHTML=list.length?list.map(r=>`<article class="day-ride"><div><strong>${escapeHtml((r.ride_time||'').slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><span>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</span><small>${escapeHtml(driverLabel(r))}${r.is_recurring?' · ↻ Wiederholung':''}</small></div><div><button data-day-edit="${r.id}">Bearbeiten</button>${r.is_recurring&&canDispatch()?`<button class="danger-link" data-day-skip="${r.id}">Nur heute aussetzen</button>`:''}</div></article>`).join(''):'<div class="empty">An diesem Tag sind keine Fahrten eingetragen.</div>';$$('[data-day-edit]').forEach(b=>b.onclick=()=>{$('#day-dialog').close();openRide(rides.find(r=>r.id===b.dataset.dayEdit))});$$('[data-day-skip]').forEach(b=>b.onclick=async()=>{$('#day-dialog').close();await deleteRide(b.dataset.daySkip)});$('#day-dialog').showModal()}
-$('#calendar-prev').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderCalendar()});$('#calendar-next').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderCalendar()});$('#calendar-today').addEventListener('click',()=>{calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderCalendar()});$('#day-new-ride').addEventListener('click',()=>{$('#day-dialog').close();openRide(null,selectedCalendarDate)});
+function openDay(date){
+selectedCalendarDate=date;
+$("#day-dialog-title").textContent=`Fahrten am ${formatDate(date)}`;
+
+if(profile?.role==="driver"){
+  const list=rides.filter(r=>isMine(r)&&r.ride_date===date).sort((a,b)=>String(a.ride_time||"").localeCompare(String(b.ride_time||"")));
+  $("#day-rides-list").innerHTML=list.length?list.map(r=>{
+    const c=myConfirmation(r),confirmed=c?.status==="confirmed";
+    return `<article class="day-ride driver-calendar-ride" data-driver-ride-detail="${r.id}">
+      <div><strong>${escapeHtml((r.ride_time||"").slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><span>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</span><small>🚕 ${escapeHtml(r.vehicle_name||"Fahrzeug offen")}</small></div>
+      <div class="driver-calendar-actions">
+        <span class="confirmation-pill ${confirmed?"confirmed":c?.status==="declined"?"declined":"pending"}">${escapeHtml(confirmationLabel(r))}</span>
+        ${!confirmed?`<button class="confirm-ride-btn" data-confirm-ride="${r.id}">✓ Bestätigen</button>`:""}
+        <button class="driver-details-btn" data-driver-ride-detail="${r.id}">Übersicht</button>
+      </div>
+    </article>`
+  }).join(""):'<div class="empty">An diesem Tag sind dir keine Fahrten zugewiesen.</div>';
+
+  $("#day-new-ride").style.display="none";
+
+  $$("[data-confirm-ride]").forEach(btn=>btn.addEventListener("click",async e=>{
+    e.stopPropagation();
+    if(await confirmDriverRide(btn.dataset.confirmRide))openDay(date)
+  }));
+
+  bindDriverRideDetails();
+  $("#day-dialog").showModal();
+  return
+}
+
+$("#day-new-ride").style.display="";
+const list=rides.filter(r=>r.ride_date===date);
+$("#day-rides-list").innerHTML=list.length?list.map(r=>`<article class="day-ride"><div><strong>${escapeHtml((r.ride_time||"").slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><span>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</span><small>${escapeHtml(driverLabel(r))}${r.is_recurring?" · ↻ Wiederholung":""}</small></div><div><button data-day-edit="${r.id}">Bearbeiten</button>${r.is_recurring&&canDispatch()?`<button class="danger-link" data-day-skip="${r.id}">Nur heute aussetzen</button>`:""}</div></article>`).join(""):'<div class="empty">An diesem Tag sind keine Fahrten eingetragen.</div>';
+$$("[data-day-edit]").forEach(b=>b.onclick=()=>{$("#day-dialog").close();openRide(rides.find(r=>r.id===b.dataset.dayEdit))});
+$$("[data-day-skip]").forEach(b=>b.onclick=async()=>{$("#day-dialog").close();await deleteRide(b.dataset.daySkip)});
+$("#day-dialog").showModal()
+}
+$('#calendar-prev').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderCalendar()});$('#calendar-next').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderCalendar()});$('#calendar-today').addEventListener('click',()=>{calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderCalendar()});$('#day-new-ride').addEventListener('click',()=>{if(profile?.role==='driver')return;$('#day-dialog').close();openRide(null,selectedCalendarDate)});
 function renderRecurring(){if(!canDispatch()||!$('#recurring-list'))return;$('#recurring-list').innerHTML=series.length?series.map(s=>`<article class="recurring-card ${s.active?'':'inactive'}"><div class="recurring-card-top"><span class="series-icon">↻</span><div><small>${escapeHtml(s.title)}</small><h3>${escapeHtml(s.passenger_name)}</h3></div><span class="${s.active?'badge':'badge danger'}">${s.active?'Aktiv':'Pausiert'}</span></div><div class="series-route"><span>${escapeHtml(s.pickup)}</span><b>→</b><span>${escapeHtml(s.destination)}</span></div><div class="series-meta"><span>🕒 ${(s.ride_time||'').slice(0,5)}</span><span>📅 ${weekdayNames(s.weekdays)}</span><span>👨‍✈️ ${escapeHtml((s.driver_names||[]).join(' + ')||'Fahrer offen')}</span></div><div class="series-actions"><button data-edit-series="${s.id}">Bearbeiten</button><button data-toggle-series="${s.id}">${s.active?'Pausieren':'Aktivieren'}</button></div></article>`).join(''):'<div class="empty">Noch keine Wiederholungsfahrten angelegt.</div>';$$('[data-edit-series]').forEach(b=>b.onclick=()=>openRecurring(series.find(s=>s.id===b.dataset.editSeries)));$$('[data-toggle-series]').forEach(b=>b.onclick=()=>toggleSeries(b.dataset.toggleSeries))}
 function weekdayNames(a=[]){const n=['So','Mo','Di','Mi','Do','Fr','Sa'];return a.map(x=>n[x]).join(', ')}
 function openRecurring(s=null){const f=$('#recurring-form');f.reset();f.elements.id.value=s?.id||'';f.elements.title.value=s?.title||'';f.elements.passenger.value=s?.passenger_name||'';f.elements.phone.value=s?.customer_phone||'';f.elements.time.value=(s?.ride_time||'').slice(0,5);f.elements.pickup.value=s?.pickup||'';f.elements.destination.value=s?.destination||'';f.elements.start_date.value=s?.start_date||isoDate(new Date());f.elements.end_date.value=s?.end_date||'';f.elements.type.value=s?.ride_type||'Taxifahrt';f.elements.note.value=s?.note||'';$$('#recurring-weekdays input').forEach(i=>i.checked=(s?.weekdays||[]).includes(Number(i.value)));driverCheckboxes('#recurring-driver-list',s?.assigned_drivers||[]);refreshVehicleOptions($('#recurring-vehicle-select'),s?.vehicle_id||'');$('#recurring-dialog').showModal()}

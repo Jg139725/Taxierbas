@@ -910,3 +910,29 @@ button.dispatch-item:hover{
   .group-passenger-fields label.full{grid-column:auto}
   .driver-add-row{grid-template-columns:1fr}
 }
+
+/* Paket 13.5 – Fahreransicht */
+.confirmation-pill{display:inline-flex;align-items:center;padding:6px 9px;border-radius:999px;font-size:10px;font-weight:900}
+.confirmation-pill.pending{color:#f5d86d;background:rgba(246,199,0,.11)}
+.confirmation-pill.confirmed{color:#91e4af;background:rgba(81,220,134,.11)}
+.confirmation-pill.declined{color:#ff9f9f;background:rgba(255,107,107,.11)}
+.confirm-ride-btn{border:1px solid rgba(81,220,134,.28)!important;background:rgba(81,220,134,.08)!important;color:#91e4af!important;font-weight:900}
+.driver-details-btn{border:1px solid rgba(255,255,255,.12)!important;background:rgba(255,255,255,.045)!important;color:#fff!important;font-weight:800}
+.driver-overview-ride{width:100%;border:0;color:inherit;text-align:left;cursor:pointer}
+.driver-overview-ride:hover,.driver-day-ride-card:hover{background:rgba(246,199,0,.05);border-color:rgba(246,199,0,.2)}
+.driver-day-ride-card{cursor:pointer}
+.driver-detail-dialog{width:min(760px,calc(100% - 24px))}
+.driver-detail-content{display:grid;gap:14px}
+.driver-detail-status{display:flex;flex-wrap:wrap;gap:8px}
+.driver-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.driver-detail-card{display:grid;gap:5px;padding:14px;border:1px solid rgba(255,255,255,.075);border-radius:14px;background:rgba(255,255,255,.035)}
+.driver-detail-card.full{grid-column:1/-1}
+.driver-detail-card small{color:rgba(255,255,255,.42);font-size:9px;font-weight:900;text-transform:uppercase}
+.driver-detail-card strong{font-size:13px}
+.driver-detail-card span{color:rgba(255,255,255,.58);font-size:11px}
+.route-down{color:#f6c700!important;font-size:15px!important}
+.driver-passenger-list{display:grid;gap:8px;margin-top:6px}
+.driver-passenger-row{display:grid;gap:3px;padding:10px;border-radius:10px;background:rgba(255,255,255,.04)}
+.driver-calendar-ride{cursor:pointer}
+.driver-calendar-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+@media(max-width:760px){.driver-detail-grid{grid-template-columns:1fr}.driver-detail-card.full{grid-column:auto}.driver-calendar-actions{justify-content:flex-start}}

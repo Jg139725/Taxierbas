@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow">
   <title>Taxi Erbas – Mitarbeiterportal</title>
-  <link rel="stylesheet" href="assets/css/portal.css?v=13.3">
+  <link rel="stylesheet" href="assets/css/portal.css?v=13.5">
   <link rel="manifest" href="portal.webmanifest">
   <meta name="theme-color" content="#10151d">
 </head>
@@ -319,6 +319,21 @@
   </form>
 </dialog>
 
+
+  <dialog id="driver-ride-detail-dialog" class="driver-detail-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head">
+        <div><span>Meine Fahrt</span><h3 id="driver-detail-title">Fahrtdetails</h3></div>
+        <button type="button" class="icon-button" data-close-dialog>×</button>
+      </div>
+      <div id="driver-detail-content" class="driver-detail-content"></div>
+      <div class="dialog-actions">
+        <button type="button" class="secondary" data-close-dialog>Schließen</button>
+        <button type="button" class="primary" id="driver-detail-confirm">✓ Fahrt bestätigen</button>
+      </div>
+    </div>
+  </dialog>
+
 <dialog id="vehicle-dialog">
     <form id="vehicle-form" class="dialog-form">
       <div class="dialog-head">
@@ -379,7 +394,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/js/supabase-config.js?v=13.3"></script>
-  <script src="assets/js/portal-live.js?v=13.3"></script>
+  <script src="assets/js/supabase-config.js?v=13.5"></script>
+  <script src="assets/js/portal-live.js?v=13.5"></script>
 </body>
 </html>
