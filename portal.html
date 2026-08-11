@@ -6,6 +6,8 @@
   <meta name="robots" content="noindex,nofollow">
   <title>Taxi Erbas – Mitarbeiterportal</title>
   <link rel="stylesheet" href="assets/css/portal.css">
+  <link rel="manifest" href="portal.webmanifest">
+  <meta name="theme-color" content="#10151d">
 </head>
 <body>
   <div class="portal-bg"></div>
@@ -14,10 +16,13 @@
     <section class="login-screen" id="login-screen">
       <div class="login-card">
         <a class="back-link" href="index.html">← Zur Website</a>
+
         <div class="login-brand">
           <div class="portal-logo-login">
-            <img src="assets/images/taxi-erbas-logo-hd.png" alt="Taxi & Mietwagen Zentrale Erbas">
+            <img src="assets/images/taxi-erbas-logo-hd.png"
+                 alt="Taxi & Mietwagen Zentrale Erbas">
           </div>
+
           <div class="login-brand-copy">
             <span class="live-badge"><i></i> Live-System</span>
             <p>Taxi & Mietwagen Zentrale Erbas</p>
@@ -25,17 +30,33 @@
             <span>Fahrer · Disposition · Verwaltung</span>
           </div>
         </div>
-        <p class="login-copy">Sicherer interner Zugang. Nach der Anmeldung wird automatisch die passende Ansicht für deine Benutzerrolle geöffnet.</p>
+
+        <p class="login-copy">
+          Sicherer interner Zugang. Nach der Anmeldung wird automatisch
+          die passende Ansicht für deine Benutzerrolle geöffnet.
+        </p>
 
         <form id="login-form">
           <label>
             <span>Benutzer</span>
-            <input id="login-user" type="email" autocomplete="username" placeholder="name@taxi-erbas.de" required>
+            <input
+              id="login-user"
+              type="email"
+              autocomplete="username"
+              placeholder="name@taxi-erbas.de"
+              required>
           </label>
+
           <label>
             <span>Passwort</span>
-            <input id="login-password" type="password" autocomplete="current-password" placeholder="Passwort" required>
+            <input
+              id="login-password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Passwort"
+              required>
           </label>
+
           <button type="submit">Anmelden</button>
           <p class="login-error" id="login-error"></p>
         </form>
@@ -43,201 +64,1301 @@
         <div class="demo-accounts">
           <strong>Echter Mitarbeiterzugang</strong>
           <span>Die Benutzer werden einmalig in Supabase angelegt.</span>
-          <span>Danach meldet sich jeder Fahrer mit seiner eigenen E-Mail-Adresse und seinem Passwort an.</span>
+          <span>
+            Danach meldet sich jeder Fahrer mit seiner eigenen
+            E-Mail-Adresse und seinem Passwort an.
+          </span>
         </div>
 
         <div class="demo-warning">
-          Live-Version: Fahrten und Fahrzeuge werden zentral gespeichert und zwischen allen angemeldeten Geräten synchronisiert.
+          Live-Version: Fahrten und Fahrzeuge werden zentral gespeichert
+          und zwischen allen angemeldeten Geräten synchronisiert.
         </div>
       </div>
     </section>
 
     <section class="dashboard hidden" id="dashboard">
+
       <aside class="sidebar">
+
         <div class="sidebar-brand">
-          <div class="portal-logo-small"><img src="assets/images/taxi-erbas-logo-hd.png" alt="Taxi Erbas"></div>
-          <div><strong>Taxi Erbas</strong><span>Mitarbeiterportal</span></div>
+          <div class="portal-logo-small">
+            <img src="assets/images/taxi-erbas-logo-hd.png"
+                 alt="Taxi Erbas">
+          </div>
+
+          <div>
+            <strong>Taxi Erbas</strong>
+            <span>Mitarbeiterportal</span>
+          </div>
         </div>
 
         <nav>
-          <button class="nav-button dispatch-nav active" data-view="dispatch">Leitstelle</button>
-          <button class="nav-button" data-view="overview">Übersicht</button>
-          <button class="nav-button" data-view="rides">Fahrten</button>
-          <button class="nav-button" data-view="fleet">Fuhrpark</button>
+          <button class="nav-button dispatch-nav active"
+                  data-view="dispatch">
+            Leitstelle
+          </button>
+
+          <button class="nav-button"
+                  data-view="overview">
+            Übersicht
+          </button>
+
+          <button class="nav-button"
+                  data-view="rides">
+            Fahrten
+          </button>
+
+          <button class="nav-button"
+                  data-view="calendar">
+            Kalender
+          </button>
+
+          <button class="nav-button recurring-nav"
+                  data-view="recurring">
+            Wiederholungsfahrten
+          </button>
+
+          <button class="nav-button"
+                  data-view="fleet">
+            Fuhrpark
+          </button>
         </nav>
 
         <div class="sidebar-footer">
+
           <span id="role-label">Disponent</span>
-          <button id="reset-demo">Daten neu laden</button>
-          <button id="logout-button">Abmelden</button>
+
+          <button id="notification-button">
+            🔔 Benachrichtigungen
+          </button>
+
+          <small
+            id="notification-state"
+            class="notification-state">
+            nicht aktiviert
+          </small>
+
+          <button id="reset-demo">
+            Daten neu laden
+          </button>
+
+          <button id="logout-button">
+            Abmelden
+          </button>
+
         </div>
+
       </aside>
 
       <div class="content">
+
         <header class="topbar">
-          <button class="mobile-menu" id="mobile-menu">☰</button>
-          <a class="topbar-logo" href="index.html" aria-label="Zur Taxi-Erbas-Website"><img src="assets/images/taxi-erbas-logo-hd.png" alt="Taxi Erbas"></a>
+
+          <button
+            class="mobile-menu"
+            id="mobile-menu">
+            ☰
+          </button>
+
+          <a
+            class="topbar-logo"
+            href="index.html"
+            aria-label="Zur Taxi-Erbas-Website">
+
+            <img
+              src="assets/images/taxi-erbas-logo-hd.png"
+              alt="Taxi Erbas">
+
+          </a>
+
           <div>
             <p class="eyebrow">Interner Bereich</p>
             <h2 id="page-title">Leitstelle</h2>
           </div>
+
           <div class="topbar-user">
+
             <span class="status-dot"></span>
-            <div><strong id="user-name">Mitarbeiter</strong><small>angemeldet</small></div>
+
+            <div>
+              <strong id="user-name">Mitarbeiter</strong>
+              <small>angemeldet</small>
+            </div>
+
           </div>
+
         </header>
 
+        <!-- LEITSTELLE -->
 
-        <section class="view active" id="view-dispatch">
+        <section
+          class="view active"
+          id="view-dispatch">
+
           <div class="dispatch-hero">
+
             <div>
-              <p class="eyebrow">Live-Disposition</p>
-              <h3>Disponenten-Leitstelle</h3>
-              <p>Fahrzeuge, offene Aufträge und Fahrer auf einem Bildschirm.</p>
+              <p class="eyebrow">
+                Live-Disposition
+              </p>
+
+              <h3>
+                Disponenten-Leitstelle
+              </h3>
+
+              <p>
+                Fahrzeuge, offene Aufträge und Fahrer
+                auf einem Bildschirm.
+              </p>
             </div>
+
             <div class="dispatch-clock">
-              <strong id="dispatch-clock">--:--</strong>
-              <span id="dispatch-date">–</span>
+
+              <strong id="dispatch-clock">
+                --:--
+              </strong>
+
+              <span id="dispatch-date">
+                –
+              </span>
+
             </div>
+
           </div>
 
           <div class="dispatch-stats">
-            <article><span>Offene Aufträge</span><strong id="dispatch-open-count">0</strong></article>
-            <article><span>Freie Fahrzeuge</span><strong id="dispatch-free-vehicles">0</strong></article>
-            <article><span>Freie Fahrer</span><strong id="dispatch-free-drivers">0</strong></article>
-            <article><span>Aktive Fahrten</span><strong id="dispatch-active-count">0</strong></article>
+
+            <article class="stat-open">
+
+              <span>
+                Offene Aufträge
+              </span>
+
+              <strong id="dispatch-open-count">
+                0
+              </strong>
+
+              <small>
+                Noch nicht abgeschlossen
+              </small>
+
+            </article>
+
+            <article class="stat-free">
+
+              <span>
+                Freie Fahrzeuge
+              </span>
+
+              <strong id="dispatch-free-vehicles">
+                0
+              </strong>
+
+              <small>
+                Sofort einsetzbar
+              </small>
+
+            </article>
+
+            <article class="stat-driver">
+
+              <span>
+                Freie Fahrer
+              </span>
+
+              <strong id="dispatch-free-drivers">
+                0
+              </strong>
+
+              <small>
+                Ohne aktiven Auftrag
+              </small>
+
+            </article>
+
+            <article class="stat-active">
+
+              <span>
+                Aktive Fahrten
+              </span>
+
+              <strong id="dispatch-active-count">
+                0
+              </strong>
+
+              <small>
+                Aktuell unterwegs
+              </small>
+
+            </article>
+
+          </div>
+
+          <div class="dispatch-legend">
+
+            <span>
+              <i class="legend-dot free"></i>
+              Frei
+            </span>
+
+            <span>
+              <i class="legend-dot reserved"></i>
+              Zugewiesen
+            </span>
+
+            <span>
+              <i class="legend-dot busy"></i>
+              Unterwegs
+            </span>
+
+            <span>
+              <i class="legend-dot offline"></i>
+              Nicht verfügbar
+            </span>
+
           </div>
 
           <div class="dispatch-board">
-            <article class="dispatch-column">
-              <div class="dispatch-column-head">
-                <div><span>Fuhrpark</span><h3>Fahrzeuge</h3></div>
-                <button class="primary mini-action" data-open-vehicle>+ Fahrzeug</button>
-              </div>
-              <div id="dispatch-vehicles" class="dispatch-list"></div>
-            </article>
-
-            <article class="dispatch-column dispatch-column-main">
-              <div class="dispatch-column-head">
-                <div><span>Aufträge</span><h3>Offene Fahrten</h3></div>
-                <button class="primary mini-action" data-open-ride>+ Neue Fahrt</button>
-              </div>
-              <div id="dispatch-rides" class="dispatch-list"></div>
-            </article>
 
             <article class="dispatch-column">
+
               <div class="dispatch-column-head">
-                <div><span>Team</span><h3>Fahrer</h3></div>
-                <span class="live-small"><i></i> Live</span>
+
+                <div>
+                  <span>Fuhrpark</span>
+                  <h3>Fahrzeuge</h3>
+                </div>
+
+                <button
+                  class="primary mini-action"
+                  data-open-vehicle>
+                  + Fahrzeug
+                </button>
+
               </div>
-              <div id="dispatch-drivers" class="dispatch-list"></div>
+
+              <div
+                id="dispatch-vehicles"
+                class="dispatch-list">
+              </div>
+
             </article>
+
+            <article
+              class="dispatch-column
+                     dispatch-column-main">
+
+              <div class="dispatch-column-head">
+
+                <div>
+                  <span>Aufträge</span>
+                  <h3>Offene Fahrten</h3>
+                </div>
+
+                <button
+                  class="primary mini-action"
+                  data-open-ride>
+                  + Neue Fahrt
+                </button>
+
+              </div>
+
+              <div
+                id="dispatch-rides"
+                class="dispatch-list">
+              </div>
+
+            </article>
+
+            <article class="dispatch-column">
+
+              <div class="dispatch-column-head">
+
+                <div>
+                  <span>Team</span>
+                  <h3>Fahrer</h3>
+                </div>
+
+                <span class="live-small">
+                  <i></i>
+                  Live
+                </span>
+
+              </div>
+
+              <div
+                id="dispatch-drivers"
+                class="dispatch-list">
+              </div>
+
+            </article>
+
           </div>
+
         </section>
 
-        <section class="view" id="view-overview">
+        <!-- ÜBERSICHT -->
+
+        <section
+          class="view"
+          id="view-overview">
+
           <div class="stat-grid">
-            <article><span>Heute</span><strong id="stat-today">0</strong><small>Fahrten</small></article>
-            <article><span>Offen</span><strong id="stat-open">0</strong><small>noch zu planen</small></article>
-            <article><span>Unterwegs</span><strong id="stat-active">0</strong><small>aktive Fahrten</small></article>
-            <article><span>Verfügbar</span><strong id="stat-available">0</strong><small>Fahrzeuge</small></article>
+
+            <article>
+              <span>Heute</span>
+              <strong id="stat-today">0</strong>
+              <small>Fahrten</small>
+            </article>
+
+            <article>
+              <span>Offen</span>
+              <strong id="stat-open">0</strong>
+              <small>noch zu planen</small>
+            </article>
+
+            <article>
+              <span>Unterwegs</span>
+              <strong id="stat-active">0</strong>
+              <small>aktive Fahrten</small>
+            </article>
+
+            <article>
+              <span>Verfügbar</span>
+              <strong id="stat-available">0</strong>
+              <small>Fahrzeuge</small>
+            </article>
+
           </div>
 
           <div class="dashboard-grid">
+
             <article class="panel">
+
               <div class="panel-head">
-                <div><span>Nächste Einsätze</span><h3>Kommende Fahrten</h3></div>
-                <button class="primary small-button" data-open-ride>Neue Fahrt</button>
+
+                <div>
+                  <span>Nächste Einsätze</span>
+                  <h3>Kommende Fahrten</h3>
+                </div>
+
+                <button
+                  class="primary small-button"
+                  data-open-ride>
+                  Neue Fahrt
+                </button>
+
               </div>
-              <div id="upcoming-rides" class="compact-list"></div>
+
+              <div
+                id="upcoming-rides"
+                class="compact-list">
+              </div>
+
             </article>
 
             <article class="panel">
+
               <div class="panel-head">
-                <div><span>Aktueller Zustand</span><h3>Fahrzeugstatus</h3></div>
+
+                <div>
+                  <span>Aktueller Zustand</span>
+                  <h3>Fahrzeugstatus</h3>
+                </div>
+
               </div>
-              <div id="fleet-summary" class="compact-list"></div>
+
+              <div
+                id="fleet-summary"
+                class="compact-list">
+              </div>
+
             </article>
+
           </div>
+
         </section>
 
-        <section class="view" id="view-rides">
+        <!-- FAHRTEN -->
+
+        <section
+          class="view"
+          id="view-rides">
+
           <div class="section-toolbar">
+
             <div>
-              <p>Fahrten anlegen, Fahrer und Fahrzeug zuweisen sowie den Status ändern.</p>
+              <p>
+                Fahrten anlegen, Fahrer und Fahrzeug
+                zuweisen sowie den Status ändern.
+              </p>
             </div>
-            <button class="primary" data-open-ride>+ Neue Fahrt</button>
+
+            <button
+              class="primary"
+              data-open-ride>
+              + Neue Fahrt
+            </button>
+
           </div>
-          <div id="rides-list" class="card-list"></div>
+
+          <div
+            id="rides-list"
+            class="card-list">
+          </div>
+
         </section>
 
-        <section class="view" id="view-fleet">
-          <div class="section-toolbar">
+        <!-- KALENDER -->
+
+        <section
+          class="view"
+          id="view-calendar">
+
+          <div class="calendar-toolbar">
+
             <div>
-              <p>Standort, Tankstand, Sauberkeit und Verfügbarkeit der Fahrzeuge verwalten.</p>
+
+              <p class="eyebrow">
+                Disposition
+              </p>
+
+              <h3>
+                Fahrtenkalender
+              </h3>
+
+              <p>
+                Auf einen Tag tippen, um alle Fahrten
+                dieses Tages zu sehen.
+              </p>
+
             </div>
-            <button class="primary" data-open-vehicle>+ Fahrzeug hinzufügen</button>
+
+            <div class="calendar-controls">
+
+              <button
+                type="button"
+                id="calendar-prev">
+                ‹
+              </button>
+
+              <strong id="calendar-title">
+                Monat
+              </strong>
+
+              <button
+                type="button"
+                id="calendar-next">
+                ›
+              </button>
+
+              <button
+                type="button"
+                id="calendar-today">
+                Heute
+              </button>
+
+            </div>
+
           </div>
-          <div id="fleet-list" class="fleet-grid"></div>
+
+          <div class="calendar-weekdays">
+
+            <span>Mo</span>
+            <span>Di</span>
+            <span>Mi</span>
+            <span>Do</span>
+            <span>Fr</span>
+            <span>Sa</span>
+            <span>So</span>
+
+          </div>
+
+          <div
+            id="calendar-grid"
+            class="calendar-grid">
+          </div>
+
         </section>
+
+        <!-- WIEDERHOLUNGSFAHRTEN -->
+
+        <section
+          class="view"
+          id="view-recurring">
+
+          <div
+            class="section-toolbar
+                   recurring-toolbar">
+
+            <div>
+
+              <p class="eyebrow">
+                Serienfahrten
+              </p>
+
+              <h3>
+                Wiederholungsfahrten
+              </h3>
+
+              <p>
+                Regelmäßige Fahrten bleiben dauerhaft
+                als Serie gespeichert. Einzelne Termine
+                können separat ausgesetzt werden.
+              </p>
+
+            </div>
+
+            <button
+              class="primary"
+              type="button"
+              id="open-recurring">
+
+              + Wiederholungsfahrt
+
+            </button>
+
+          </div>
+
+          <div
+            id="recurring-list"
+            class="recurring-grid">
+          </div>
+
+        </section>
+
+        <!-- FUHRPARK -->
+
+        <section
+          class="view"
+          id="view-fleet">
+
+          <div class="section-toolbar">
+
+            <div>
+
+              <p>
+                Standort, Tankstand, Sauberkeit und
+                Verfügbarkeit der Fahrzeuge verwalten.
+              </p>
+
+            </div>
+
+            <button
+              class="primary"
+              data-open-vehicle>
+
+              + Fahrzeug hinzufügen
+
+            </button>
+
+          </div>
+
+          <div
+            id="fleet-list"
+            class="fleet-grid">
+          </div>
+
+        </section>
+
       </div>
+
     </section>
+
   </main>
 
+  <!-- FAHRT -->
+
   <dialog id="ride-dialog">
-    <form id="ride-form" class="dialog-form">
+
+    <form
+      id="ride-form"
+      class="dialog-form">
+
       <div class="dialog-head">
-        <div><span>Disposition</span><h3>Fahrt eintragen</h3></div>
-        <button type="button" class="icon-button" data-close-dialog aria-label="Fenster schließen">×</button>
+
+        <div>
+          <span>Disposition</span>
+          <h3>Fahrt eintragen</h3>
+        </div>
+
+        <button
+          type="button"
+          class="icon-button"
+          data-close-dialog
+          aria-label="Fenster schließen">
+
+          ×
+
+        </button>
+
       </div>
-      <input type="hidden" name="id">
+
+      <input
+        type="hidden"
+        name="id">
+
       <div class="form-grid">
-        <label><span>Kunde</span><input name="customer" required placeholder="Max Mustermann"></label>
-        <label><span>Telefon</span><input name="phone" placeholder="0170 1234567"></label>
-        <label class="full"><span>Abholort</span><input name="pickup" required placeholder="Straße, Ort"></label>
-        <label class="full"><span>Zielort</span><input name="destination" required placeholder="Straße, Ort"></label>
-        <label><span>Datum</span><input name="date" type="date" required></label>
-        <label><span>Uhrzeit</span><input name="time" type="time" required></label>
-        <label><span>Fahrer</span><select name="driver"><option>Ali</option><option>Mehmet</option><option>Ayse</option><option>Noch offen</option></select></label>
-        <label><span>Fahrzeug</span><select name="vehicle" id="ride-vehicle-select"></select></label>
-        <label><span>Status</span><select name="status"><option>Offen</option><option>Zugewiesen</option><option>Unterwegs</option><option>Abgeschlossen</option></select></label>
-        <label><span>Fahrtart</span><select name="type"><option>Taxifahrt</option><option>Krankenfahrt</option><option>Flughafentransfer</option><option>Schülerfahrt</option></select></label>
-        <label class="full"><span>Hinweis</span><textarea name="note" rows="3" placeholder="Besondere Hinweise"></textarea></label>
+
+        <label>
+          <span>Kunde</span>
+          <input
+            name="customer"
+            required
+            placeholder="Max Mustermann">
+        </label>
+
+        <label>
+          <span>Telefon</span>
+          <input
+            name="phone"
+            placeholder="0170 1234567">
+        </label>
+
+        <label class="full">
+          <span>Abholort</span>
+          <input
+            name="pickup"
+            required
+            placeholder="Straße, Ort">
+        </label>
+
+        <label class="full">
+          <span>Zielort</span>
+          <input
+            name="destination"
+            required
+            placeholder="Straße, Ort">
+        </label>
+
+        <label>
+          <span>Datum</span>
+          <input
+            name="date"
+            type="date"
+            required>
+        </label>
+
+        <label>
+          <span>Uhrzeit</span>
+          <input
+            name="time"
+            type="time"
+            required>
+        </label>
+
+        <div
+          class="full multi-driver-field">
+
+          <span>
+            Fahrer (mehrere möglich)
+          </span>
+
+          <div
+            id="ride-driver-list"
+            class="driver-checkbox-list">
+          </div>
+
+          <small>
+            Mehrere Fahrer können derselben Fahrt
+            zugewiesen werden.
+          </small>
+
+        </div>
+
+        <label>
+
+          <span>Fahrzeug</span>
+
+          <select
+            name="vehicle"
+            id="ride-vehicle-select">
+          </select>
+
+        </label>
+
+        <label>
+
+          <span>Status</span>
+
+          <select name="status">
+
+            <option>Offen</option>
+            <option>Zugewiesen</option>
+            <option>Unterwegs</option>
+            <option>Abgeschlossen</option>
+
+          </select>
+
+        </label>
+
+        <label>
+
+          <span>Fahrtart</span>
+
+          <select name="type">
+
+            <option>Taxifahrt</option>
+            <option>Krankenfahrt</option>
+            <option>Flughafentransfer</option>
+            <option>Schülerfahrt</option>
+
+          </select>
+
+        </label>
+
+        <label class="full">
+
+          <span>Hinweis</span>
+
+          <textarea
+            name="note"
+            rows="3"
+            placeholder="Besondere Hinweise">
+          </textarea>
+
+        </label>
+
+        <div
+          class="full series-occurrence-info"
+          id="series-occurrence-info"
+          hidden>
+
+          <strong>
+            Teil einer Wiederholungsfahrt
+          </strong>
+
+          <span>
+            Änderungen hier gelten nur für
+            diesen einzelnen Termin.
+          </span>
+
+        </div>
+
       </div>
+
       <div class="dialog-actions">
-        <button type="button" class="secondary" data-close-dialog>Abbrechen</button>
-        <button type="submit" class="primary">Fahrt speichern</button>
+
+        <button
+          type="button"
+          class="secondary"
+          data-close-dialog>
+
+          Abbrechen
+
+        </button>
+
+        <button
+          type="submit"
+          class="primary">
+
+          Fahrt speichern
+
+        </button>
+
       </div>
+
     </form>
+
   </dialog>
+
+  <!-- FAHRZEUG -->
 
   <dialog id="vehicle-dialog">
-    <form id="vehicle-form" class="dialog-form">
+
+    <form
+      id="vehicle-form"
+      class="dialog-form">
+
       <div class="dialog-head">
-        <div><span>Fuhrpark</span><h3>Fahrzeug verwalten</h3></div>
-        <button type="button" class="icon-button" data-close-dialog aria-label="Fenster schließen">×</button>
+
+        <div>
+          <span>Fuhrpark</span>
+          <h3>Fahrzeug verwalten</h3>
+        </div>
+
+        <button
+          type="button"
+          class="icon-button"
+          data-close-dialog
+          aria-label="Fenster schließen">
+
+          ×
+
+        </button>
+
       </div>
-      <input type="hidden" name="id">
+
+      <input
+        type="hidden"
+        name="id">
+
       <div class="form-grid">
-        <label><span>Fahrzeug</span><input name="name" required placeholder="Mercedes V-Klasse"></label>
-        <label><span>Kennzeichen</span><input name="plate" required placeholder="MN-TE 123"></label>
-        <label><span>Standort</span><input name="location" required placeholder="Betriebshof"></label>
-        <label><span>Status</span><select name="status"><option>Verfügbar</option><option>Unterwegs</option><option>Werkstatt</option><option>Nicht verfügbar</option></select></label>
-        <label><span>Tankstand</span><select name="fuel"><option>Voll</option><option>¾ voll</option><option>Halbvoll</option><option>¼ voll</option><option>Reserve</option></select></label>
-        <label><span>Sauberkeit</span><select name="cleanliness"><option>Sauber</option><option>Leicht verschmutzt</option><option>Reinigung erforderlich</option></select></label>
-        <label><span>Kilometerstand</span><input name="mileage" type="number" min="0" placeholder="84500"></label>
-        <label><span>Aktueller Fahrer</span><input name="driver" placeholder="z. B. Ali"></label>
-        <label class="full"><span>Notiz / Mangel</span><textarea name="note" rows="3" placeholder="Keine Schäden"></textarea></label>
+
+        <label>
+
+          <span>Fahrzeug</span>
+
+          <input
+            name="name"
+            required
+            placeholder="Mercedes V-Klasse">
+
+        </label>
+
+        <label>
+
+          <span>Kennzeichen</span>
+
+          <input
+            name="plate"
+            required
+            placeholder="MN-TE 123">
+
+        </label>
+
+        <label>
+
+          <span>Standort</span>
+
+          <input
+            name="location"
+            required
+            placeholder="Betriebshof">
+
+        </label>
+
+        <label>
+
+          <span>Status</span>
+
+          <select name="status">
+
+            <option>Verfügbar</option>
+            <option>Unterwegs</option>
+            <option>Werkstatt</option>
+            <option>Nicht verfügbar</option>
+
+          </select>
+
+        </label>
+
+        <label>
+
+          <span>Tankstand</span>
+
+          <select name="fuel">
+
+            <option>Voll</option>
+            <option>¾ voll</option>
+            <option>Halbvoll</option>
+            <option>¼ voll</option>
+            <option>Reserve</option>
+
+          </select>
+
+        </label>
+
+        <label>
+
+          <span>Sauberkeit</span>
+
+          <select name="cleanliness">
+
+            <option>Sauber</option>
+            <option>Leicht verschmutzt</option>
+            <option>Reinigung erforderlich</option>
+
+          </select>
+
+        </label>
+
+        <label>
+
+          <span>Kilometerstand</span>
+
+          <input
+            name="mileage"
+            type="number"
+            min="0"
+            placeholder="84500">
+
+        </label>
+
+        <label>
+
+          <span>Aktueller Fahrer</span>
+
+          <input
+            name="driver"
+            placeholder="z. B. Ali">
+
+        </label>
+
+        <label class="full">
+
+          <span>Notiz / Mangel</span>
+
+          <textarea
+            name="note"
+            rows="3"
+            placeholder="Keine Schäden">
+          </textarea>
+
+        </label>
+
       </div>
+
       <div class="dialog-actions">
-        <button type="button" class="secondary" data-close-dialog>Abbrechen</button>
-        <button type="submit" class="primary">Fahrzeug speichern</button>
+
+        <button
+          type="button"
+          class="secondary"
+          data-close-dialog>
+
+          Abbrechen
+
+        </button>
+
+        <button
+          type="submit"
+          class="primary">
+
+          Fahrzeug speichern
+
+        </button>
+
       </div>
+
     </form>
+
   </dialog>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- TAG IM KALENDER -->
+
+  <dialog
+    id="day-dialog"
+    class="wide-dialog">
+
+    <div class="dialog-form">
+
+      <div class="dialog-head">
+
+        <div>
+
+          <span>Kalender</span>
+
+          <h3 id="day-dialog-title">
+            Fahrten
+          </h3>
+
+        </div>
+
+        <button
+          type="button"
+          class="icon-button"
+          data-close-dialog>
+
+          ×
+
+        </button>
+
+      </div>
+
+      <div
+        id="day-rides-list"
+        class="day-rides-list">
+      </div>
+
+      <div class="dialog-actions">
+
+        <button
+          type="button"
+          class="secondary"
+          data-close-dialog>
+
+          Schließen
+
+        </button>
+
+        <button
+          type="button"
+          class="primary"
+          id="day-new-ride">
+
+          + Fahrt anlegen
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </dialog>
+
+  <!-- WIEDERHOLUNGSFAHRT -->
+
+  <dialog
+    id="recurring-dialog"
+    class="wide-dialog">
+
+    <form
+      id="recurring-form"
+      class="dialog-form">
+
+      <div class="dialog-head">
+
+        <div>
+
+          <span>
+            Wiederholungsfahrt
+          </span>
+
+          <h3>
+            Serie verwalten
+          </h3>
+
+        </div>
+
+        <button
+          type="button"
+          class="icon-button"
+          data-close-dialog>
+
+          ×
+
+        </button>
+
+      </div>
+
+      <input
+        type="hidden"
+        name="id">
+
+      <div class="form-grid">
+
+        <label>
+
+          <span>Name der Serie</span>
+
+          <input
+            name="title"
+            required
+            placeholder="z. B. Tagespflege Müller">
+
+        </label>
+
+        <label>
+
+          <span>Fahrgast / Person</span>
+
+          <input
+            name="passenger"
+            required
+            placeholder="Vor- und Nachname">
+
+        </label>
+
+        <label>
+
+          <span>Telefon</span>
+
+          <input
+            name="phone"
+            placeholder="0170 1234567">
+
+        </label>
+
+        <label>
+
+          <span>Uhrzeit</span>
+
+          <input
+            name="time"
+            type="time"
+            required>
+
+        </label>
+
+        <label class="full">
+
+          <span>Abholort</span>
+
+          <input
+            name="pickup"
+            required
+            placeholder="Straße, Ort">
+
+        </label>
+
+        <label class="full">
+
+          <span>Zielort</span>
+
+          <input
+            name="destination"
+            required
+            placeholder="Straße, Ort">
+
+        </label>
+
+        <label>
+
+          <span>Startdatum</span>
+
+          <input
+            name="start_date"
+            type="date"
+            required>
+
+        </label>
+
+        <label>
+
+          <span>Enddatum (optional)</span>
+
+          <input
+            name="end_date"
+            type="date">
+
+        </label>
+
+        <div class="full">
+
+          <span class="field-title">
+            Wochentage
+          </span>
+
+          <div
+            class="weekday-select"
+            id="recurring-weekdays">
+
+            <label>
+              <input type="checkbox" value="1">
+              <span>Mo</span>
+            </label>
+
+            <label>
+              <input type="checkbox" value="2">
+              <span>Di</span>
+            </label>
+
+            <label>
+              <input type="checkbox" value="3">
+              <span>Mi</span>
+            </label>
+
+            <label>
+              <input type="checkbox" value="4">
+              <span>Do</span>
+            </label>
+
+            <label>
+              <input type="checkbox" value="5">
+              <span>Fr</span>
+            </label>
+
+            <label>
+              <input type="checkbox" value="6">
+              <span>Sa</span>
+            </label>
+
+            <label>
+              <input type="checkbox" value="0">
+              <span>So</span>
+            </label>
+
+          </div>
+
+        </div>
+
+        <div
+          class="full multi-driver-field">
+
+          <span>
+            Fahrer (mehrere möglich)
+          </span>
+
+          <div
+            id="recurring-driver-list"
+            class="driver-checkbox-list">
+          </div>
+
+        </div>
+
+        <label>
+
+          <span>Fahrzeug</span>
+
+          <select
+            name="vehicle"
+            id="recurring-vehicle-select">
+          </select>
+
+        </label>
+
+        <label>
+
+          <span>Fahrtart</span>
+
+          <select name="type">
+
+            <option>Taxifahrt</option>
+            <option>Krankenfahrt</option>
+            <option>Flughafentransfer</option>
+            <option>Schülerfahrt</option>
+
+          </select>
+
+        </label>
+
+        <label class="full">
+
+          <span>Hinweis</span>
+
+          <textarea
+            name="note"
+            rows="3"
+            placeholder="Besondere Hinweise">
+          </textarea>
+
+        </label>
+
+      </div>
+
+      <div class="dialog-actions">
+
+        <button
+          type="button"
+          class="secondary"
+          data-close-dialog>
+
+          Abbrechen
+
+        </button>
+
+        <button
+          type="submit"
+          class="primary">
+
+          Serie speichern
+
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+  </script>
+
   <script src="assets/js/supabase-config.js"></script>
+
   <script src="assets/js/portal-live.js"></script>
+
 </body>
 </html>
