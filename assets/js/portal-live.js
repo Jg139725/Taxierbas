@@ -1,6 +1,6 @@
 (() => {
 "use strict";
-const db=window.taxiSupabase;
+const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.3 geladen");
 let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],realtimeChannel=null,clockTimer=null;
 let calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=null,knownRideIds=new Set();
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -177,6 +177,11 @@ function collectGroupPassengers(){
 
 async function openRide(r=null,presetDate=null){
 const f=$('#ride-form');
+if(!f) throw new Error('ride-form fehlt in portal.html');
+if(!$('#ride-dialog')) throw new Error('ride-dialog fehlt in portal.html');
+if(!$('#ride-mode-value')) throw new Error('ride-mode-value fehlt in portal.html');
+if(!$('#group-passenger-list')) throw new Error('group-passenger-list fehlt in portal.html');
+if(!$('#single-driver-select')) throw new Error('single-driver-select fehlt in portal.html');
 f.reset();
 f.elements.id.value=r?.id||'';
 f.elements.date.value=r?.ride_date||presetDate||isoDate(new Date());
@@ -226,7 +231,23 @@ $('#add-group-driver')?.addEventListener('click',()=>{
   renderGroupDriverChips();
   renderGroupDriverSelect()
 });
-$$('[data-open-ride]').forEach(b=>b.addEventListener('click',()=>openRide()));$$('[data-open-vehicle]').forEach(b=>b.addEventListener('click',()=>openVehicle()));$$('[data-close-dialog]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog')?.close()));$$('dialog').forEach(d=>{d.addEventListener('click',e=>{if(e.target===d)d.close()});d.addEventListener('cancel',e=>{e.preventDefault();d.close()})});
+document.addEventListener('click',e=>{
+  const rideButton=e.target.closest('[data-open-ride]');
+  if(rideButton){
+    e.preventDefault();
+    openRide().catch(err=>{
+      console.error('Neue Fahrt konnte nicht geöffnet werden:',err);
+      alert('Die Fahrtmaske konnte nicht geöffnet werden. Bitte die Seite einmal vollständig neu laden.');
+    });
+    return;
+  }
+
+  const vehicleButton=e.target.closest('[data-open-vehicle]');
+  if(vehicleButton){
+    e.preventDefault();
+    openVehicle();
+  }
+});$$('[data-close-dialog]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog')?.close()));$$('dialog').forEach(d=>{d.addEventListener('click',e=>{if(e.target===d)d.close()});d.addEventListener('cancel',e=>{e.preventDefault();d.close()})});
 $('#ride-form').addEventListener('submit',async e=>{
 e.preventDefault();
 if(!canDispatch())return;
