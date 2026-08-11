@@ -1546,3 +1546,25 @@ body.lightbox-open{overflow:hidden}
 .main-nav .nav-portal:hover{background:#fff;color:#111}
 .internal-portal-link{display:inline-flex;margin:18px auto 0;padding:9px 14px;border:1px solid rgba(255,255,255,.24);border-radius:999px;color:inherit;text-decoration:none;font-size:.82rem;opacity:.85}
 @media(max-width:900px){.main-nav .nav-portal{width:100%;justify-content:center;text-align:center;margin-top:8px}.internal-portal-link{margin-left:20px}}
+
+
+/* FINALPAKET – öffentliche Website */
+.services .cards article.service-medical{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(145deg,#fff,#fffdf2);
+  border:1px solid rgba(156,121,0,.28);
+  box-shadow:0 14px 34px rgba(17,23,34,.08);
+}
+.services .cards article.service-medical:before{
+  content:"+";position:absolute;right:18px;top:10px;color:rgba(156,121,0,.10);font-size:72px;font-weight:900;line-height:1
+}
+.services .cards article.service-medical h3{color:#15191f;font-weight:900}
+.services .cards article.service-medical p{color:#4c535c;font-size:14px;line-height:1.65}
+.services .cards article.service-medical>span{color:#765d00;background:#fff6c8;padding:6px 9px;border-radius:999px;display:inline-flex}
+.contact-clean-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:start}
+.contact-list-clean{margin-top:0;grid-template-columns:1fr 1fr}
+.contact-list-clean>*{min-height:92px;display:flex!important;flex-direction:column;justify-content:center}
+.contact-booking-link{background:#111722!important;color:#fff!important}
+.contact-booking-link span{color:#f6c700!important}
+@media(max-width:780px){.contact-clean-grid,.contact-list-clean{grid-template-columns:1fr}.contact-list-clean>*{min-height:auto}}

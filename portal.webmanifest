@@ -1,0 +1,20 @@
+{
+  "name": "Taxi Erbas Mitarbeiterportal",
+  "short_name": "Taxi Erbas",
+  "start_url": "portal.html",
+  "display": "standalone",
+  "background_color": "#10151d",
+  "theme_color": "#10151d",
+  "icons": [
+    {
+      "src": "assets/images/taxi-erbas-original-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/images/taxi-erbas-logo-hd.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
