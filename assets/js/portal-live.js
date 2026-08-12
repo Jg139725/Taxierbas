@@ -11,6 +11,40 @@ const canDispatch=()=>["admin","dispatcher"].includes(profile?.role);
 const rideDriverIds=r=>Array.isArray(r.assigned_drivers)&&r.assigned_drivers.length?r.assigned_drivers:(r.assigned_driver?[r.assigned_driver]:[]);
 const rideDriverNames=r=>Array.isArray(r.driver_names)&&r.driver_names.length?r.driver_names:(r.driver_name?[r.driver_name]:[]);
 const driverLabel=r=>rideDriverNames(r).length?rideDriverNames(r).join(" + "):"Fahrer offen";
+const officeConfirmationFor=(rideId,driverId)=>
+  (rideConfirmations||[]).find(c=>c.ride_id===rideId&&c.driver_id===driverId);
+
+function officeConfirmationInfo(rideId,driverId){
+  const c=officeConfirmationFor(rideId,driverId);
+  if(!c)return {label:"Noch offen",className:"pending"};
+  if(c.status==="confirmed")return {label:"Bestätigt",className:"confirmed"};
+  if(c.status==="declined")return {label:"Abgelehnt",className:"declined"};
+  return {label:"Noch offen",className:"pending"};
+}
+
+function officeConfirmationList(ride){
+  const ids=rideDriverIds(ride);
+  if(!ids.length)return '<span class="office-confirm-empty">Kein Fahrer zugewiesen</span>';
+
+  return `<div class="office-confirm-list">${ids.map(id=>{
+    const d=drivers.find(x=>x.id===id);
+    const info=officeConfirmationInfo(ride.id,id);
+    return `<span class="office-confirm-item ${info.className}">
+      <strong>${escapeHtml(d?.full_name||"Fahrer")}</strong>
+      <em>${info.label}</em>
+    </span>`;
+  }).join("")}</div>`;
+}
+
+function officeOverallConfirmation(ride){
+  const ids=rideDriverIds(ride);
+  if(!ids.length)return {label:"Ohne Fahrer",className:"neutral"};
+  const states=ids.map(id=>officeConfirmationInfo(ride.id,id).className);
+  if(states.includes("declined"))return {label:"Fahrer abgelehnt",className:"declined"};
+  if(states.every(s=>s==="confirmed"))return {label:"Alle bestätigt",className:"confirmed"};
+  return {label:"Bestätigung offen",className:"pending"};
+}
+
 const isMine=r=>profile?.role!=="driver"||rideDriverIds(r).includes(profile.id);
 const myConfirmation=r=>rideConfirmations.find(c=>c.ride_id===r.id&&c.driver_id===profile?.id);
 const confirmationLabel=r=>{
@@ -129,7 +163,7 @@ function openDriverRideDetail(ride){
   $("#driver-detail-title").textContent=`${(ride.ride_time||"").slice(0,5)} Uhr · ${ride.customer_name||"Fahrt"}`;
   $("#driver-detail-content").innerHTML=`
     <div class="driver-detail-status">
-      <span class="${badgeClass(ride.status)}">${escapeHtml(ride.status)}</span>
+      <span class="${badgeClass(ride.status)}">${escapeHtml(ride.status)}</span><span class="office-overall-confirm ${officeOverallConfirmation(ride).className}">${officeOverallConfirmation(ride).label}</span>
       <span class="confirmation-pill ${confirmed?"confirmed":c?.status==="declined"?"declined":"pending"}">${escapeHtml(confirmationLabel(ride))}</span>
     </div>
 
@@ -327,7 +361,7 @@ if(profile?.role==="driver"){
 }
 
 const visible=rides;
-$("#rides-list").innerHTML=visible.length?visible.map(r=>`<article class="ride-card"><div class="ride-time"><strong>${escapeHtml((r.ride_time||"").slice(0,5))}</strong><span>${formatDate(r.ride_date)}</span></div><div class="ride-main"><h3>${escapeHtml(r.customer_name)} ${r.is_recurring?'<small class="series-chip">↻ Serie</small>':""}</h3><p>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</p><div class="ride-meta"><span class="pill">${escapeHtml(driverLabel(r))}</span><span class="pill">${escapeHtml(r.vehicle_name||"Fahrzeug offen")}</span><span class="pill">${escapeHtml(r.ride_type)}</span></div></div><div class="ride-actions"><select data-ride-status="${r.id}">${["Offen","Zugewiesen","Unterwegs","Abgeschlossen"].map(st=>`<option ${st===r.status?"selected":""}>${st}</option>`).join("")}</select><button data-edit-ride="${r.id}">Bearbeiten</button><button data-delete-ride="${r.id}">${r.is_recurring?"Einmal aussetzen":"Löschen"}</button></div></article>`).join(""):'<div class="empty">Noch keine Fahrten.</div>';
+$("#rides-list").innerHTML=visible.length?visible.map(r=>`<article class="ride-card"><div class="ride-time"><strong>${escapeHtml((r.ride_time||"").slice(0,5))}</strong><span>${formatDate(r.ride_date)}</span></div><div class="ride-main"><h3>${escapeHtml(r.customer_name)} ${r.is_recurring?'<small class="series-chip">↻ Serie</small>':""}</h3><p>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</p><div class="ride-meta"><span class="pill">${escapeHtml(driverLabel(r))}</span>${canDispatch()?`<div class="office-confirmation-box">${officeConfirmationList(r)}</div><span class="office-overall-confirm ${officeOverallConfirmation(r).className}">${officeOverallConfirmation(r).label}</span>`:""}<span class="pill">${escapeHtml(r.vehicle_name||"Fahrzeug offen")}</span><span class="pill">${escapeHtml(r.ride_type)}</span></div></div><div class="ride-actions"><select data-ride-status="${r.id}">${["Offen","Zugewiesen","Unterwegs","Abgeschlossen"].map(st=>`<option ${st===r.status?"selected":""}>${st}</option>`).join("")}</select><button data-edit-ride="${r.id}">Bearbeiten</button><button data-delete-ride="${r.id}">${r.is_recurring?"Einmal aussetzen":"Löschen"}</button></div></article>`).join(""):'<div class="empty">Noch keine Fahrten.</div>';
 $$("[data-ride-status]").forEach(el=>el.addEventListener("change",async()=>{const{error}=await db.from("rides").update({status:el.value}).eq("id",el.dataset.rideStatus);if(error)alert(error.message)}));
 $$("[data-delete-ride]").forEach(b=>b.addEventListener("click",()=>deleteRide(b.dataset.deleteRide)));
 bindEditButtons()
@@ -679,7 +713,7 @@ if(profile?.role==="driver"){
 
 $("#day-new-ride").style.display="";
 const list=rides.filter(r=>r.ride_date===date);
-$("#day-rides-list").innerHTML=list.length?list.map(r=>`<article class="day-ride"><div><strong>${escapeHtml((r.ride_time||"").slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><span>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</span><small>${escapeHtml(driverLabel(r))}${r.is_recurring?" · ↻ Wiederholung":""}</small></div><div><button data-day-edit="${r.id}">Bearbeiten</button>${r.is_recurring&&canDispatch()?`<button class="danger-link" data-day-skip="${r.id}">Nur heute aussetzen</button>`:""}</div></article>`).join(""):'<div class="empty">An diesem Tag sind keine Fahrten eingetragen.</div>';
+$("#day-rides-list").innerHTML=list.length?list.map(r=>`<article class="day-ride"><div><strong>${escapeHtml((r.ride_time||"").slice(0,5))} · ${escapeHtml(r.customer_name)}</strong><span>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</span><small>${escapeHtml(driverLabel(r))}${r.is_recurring?" · ↻ Wiederholung":""}</small>${canDispatch()?`<div class="office-calendar-confirm">${officeConfirmationList(r)}</div>`:""}</div><div><button data-day-edit="${r.id}">Bearbeiten</button>${r.is_recurring&&canDispatch()?`<button class="danger-link" data-day-skip="${r.id}">Nur heute aussetzen</button>`:""}</div></article>`).join(""):'<div class="empty">An diesem Tag sind keine Fahrten eingetragen.</div>';
 $$("[data-day-edit]").forEach(b=>b.onclick=()=>{$("#day-dialog").close();openRide(rides.find(r=>r.id===b.dataset.dayEdit))});
 $$("[data-day-skip]").forEach(b=>b.onclick=async()=>{$("#day-dialog").close();await deleteRide(b.dataset.daySkip)});
 $("#day-dialog").showModal()
