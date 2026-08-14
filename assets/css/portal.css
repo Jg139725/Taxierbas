@@ -1039,3 +1039,6 @@ button.dispatch-item:hover{
 .dispatch-driver-confirm.declined{border-color:rgba(255,107,107,.25);background:rgba(255,107,107,.09)}.dispatch-driver-confirm.declined em{color:#ff9f9f}
 .dispatch-driver-confirm.neutral{color:#b6bcc5}
 .office-ride-confirm-line{width:100%;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+
+/* Paket 13.8 – Mobile Sync */
+body.portal-offline::after{content:"Keine Internetverbindung – das Portal synchronisiert automatisch, sobald du wieder online bist.";position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;padding:11px 14px;border-radius:12px;background:#8b3030;color:#fff;text-align:center;font-size:12px;font-weight:800;box-shadow:0 12px 30px rgba(0,0,0,.3)}

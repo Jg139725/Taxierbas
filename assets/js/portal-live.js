@@ -1,6 +1,9 @@
 (() => {
 "use strict";
-const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.3 geladen");
+const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.8 geladen");
+let mobileSyncTimer=null;
+let mobileSyncStarted=false;
+let dataLoadInFlight=null;
 let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],rideConfirmations=[],realtimeChannel=null,clockTimer=null;
 let calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=null,knownRideIds=new Set();
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -232,7 +235,7 @@ function showError(m){$("#login-error").textContent=m||"Es ist ein Fehler aufget
 function badgeClass(v){if(["Werkstatt","Nicht verfügbar","Reinigung erforderlich","Reserve"].includes(v))return"badge danger";if(["Unterwegs","Leicht verschmutzt","¼ voll","Halbvoll","Offen"].includes(v))return"badge warn";return"badge"}
 async function loadProfile(){const{data,error}=await db.from("profiles").select("id,full_name,role,active").eq("id",session.user.id).single();if(error)throw new Error("Mitarbeiterprofil konnte nicht geladen werden.");if(!data.active)throw new Error("Dieser Mitarbeiterzugang wurde deaktiviert.");profile=data}
 async function refreshRecurring(){if(!canDispatch())return;try{await db.rpc("refresh_recurring_occurrences",{p_until:isoDate(new Date(Date.now()+365*86400000))})}catch(e){console.warn("Serienfahrten konnten nicht aktualisiert werden",e)}}
-async function loadData(){
+async function coreLoadData(){
 await refreshRecurring();
 const calls=[
   db.from("rides").select("*").order("ride_date").order("ride_time"),
@@ -258,12 +261,114 @@ series=canDispatch()&&!results[5]?.error?(results[5].data||[]):[];
 knownRideIds=new Set(rides.map(r=>r.id));
 renderAll()
 }
-function subscribeRealtime(){if(realtimeChannel)db.removeChannel(realtimeChannel);realtimeChannel=db.channel("taxi-erbas-live").on("postgres_changes",{event:"*",schema:"public",table:"rides"},p=>{notifyRide(p);loadData()}).on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"profiles"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"recurring_series"},loadData).on("postgres_changes",{event:"*",schema:"public",table:"ride_confirmations"},loadData).subscribe()}
+async function loadData(){
+  if(dataLoadInFlight)return dataLoadInFlight;
+  dataLoadInFlight=coreLoadData().catch(error=>{
+    console.error("Taxi Erbas Daten-Sync fehlgeschlagen:",error);
+    throw error;
+  }).finally(()=>{dataLoadInFlight=null});
+  return dataLoadInFlight;
+}
+function subscribeRealtime(){
+  if(realtimeChannel)db.removeChannel(realtimeChannel);
+
+  const refresh=()=>loadData().catch(error=>console.warn("Realtime-Nachladen fehlgeschlagen",error));
+
+  realtimeChannel=db.channel("taxi-erbas-live-13-8")
+    .on("postgres_changes",{event:"*",schema:"public",table:"rides"},payload=>{notifyRide(payload);refresh()})
+    .on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},refresh)
+    .on("postgres_changes",{event:"*",schema:"public",table:"profiles"},refresh)
+    .on("postgres_changes",{event:"*",schema:"public",table:"recurring_series"},refresh)
+    .on("postgres_changes",{event:"*",schema:"public",table:"ride_confirmations"},refresh)
+    .on("postgres_changes",{event:"*",schema:"public",table:"ride_passengers"},refresh)
+    .subscribe(status=>{
+      console.info("Taxi Erbas Realtime:",status);
+      if(status==="SUBSCRIBED")refresh();
+    });
+}
+
+function startMobileSync(){
+  if(mobileSyncStarted)return;
+  mobileSyncStarted=true;
+
+  if(mobileSyncTimer)clearInterval(mobileSyncTimer);
+  mobileSyncTimer=setInterval(()=>{
+    if(session && document.visibilityState==="visible" && navigator.onLine){
+      loadData().catch(()=>{});
+    }
+  },10000);
+
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible" && session){
+      loadData().catch(()=>{});
+    }
+  });
+
+  window.addEventListener("focus",()=>{
+    if(session)loadData().catch(()=>{});
+  });
+
+  window.addEventListener("pageshow",()=>{
+    if(session)loadData().catch(()=>{});
+  });
+
+  window.addEventListener("online",()=>{
+    document.body.classList.remove("portal-offline");
+    if(session){
+      subscribeRealtime();
+      loadData().catch(()=>{});
+    }
+  });
+
+  window.addEventListener("offline",()=>{
+    document.body.classList.add("portal-offline");
+  });
+}
 function startClock(){const f=()=>{const n=new Date();if($("#dispatch-clock"))$("#dispatch-clock").textContent=n.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});if($("#dispatch-date"))$("#dispatch-date").textContent=n.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})};f();clearInterval(clockTimer);clockTimer=setInterval(f,30000)}
 function updateNotificationUI(){const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;const state=Notification.permission;s.textContent=state==="granted"?"aktiv":state==="denied"?"im Browser blockiert":"nicht aktiviert";b.classList.toggle("notification-on",state==="granted")}
 async function enableNotifications(){if(!("Notification"in window)){alert("Dieser Browser unterstützt Benachrichtigungen nicht.");return}const p=await Notification.requestPermission();updateNotificationUI();if(p==="granted"){const reg=await navigator.serviceWorker?.ready;reg?.showNotification("Taxi Erbas",{body:"Benachrichtigungen sind aktiviert.",icon:"assets/images/taxi-erbas-original-logo.png"})}}
-async function openDashboard(){$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
-async function initialize(){if("serviceWorker"in navigator)navigator.serviceWorker.register("portal-sw.js").catch(console.warn);const{data}=await db.auth.getSession();session=data.session;if(!session){$("#login-screen").classList.remove("hidden");$("#dashboard").classList.add("hidden");return}try{await loadProfile();await openDashboard()}catch(e){await db.auth.signOut();showError(e.message)}}
+async function openDashboard(){startMobileSync();$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
+async function initialize(){
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("portal-sw.js").catch(console.warn);
+  }
+
+  try{
+    const {data,error}=await db.auth.getSession();
+    if(error)console.warn("Gespeicherte Sitzung konnte nicht gelesen werden:",error);
+    session=data?.session||null;
+
+    if(!session){
+      $("#login-screen").classList.remove("hidden");
+      $("#dashboard").classList.add("hidden");
+      return;
+    }
+
+    // Wichtig: Bei einem kurzen Netzfehler NICHT automatisch ausloggen.
+    try{
+      await loadProfile();
+      await openDashboard();
+    }catch(error){
+      console.error("Portal konnte mit gespeicherter Sitzung noch nicht vollständig geladen werden:",error);
+      $("#login-screen").classList.add("hidden");
+      $("#dashboard").classList.remove("hidden");
+      setTimeout(async()=>{
+        try{
+          const check=await db.auth.getSession();
+          if(check.data?.session){
+            session=check.data.session;
+            await loadProfile();
+            await openDashboard();
+          }
+        }catch(retryError){console.warn("Portal-Retry fehlgeschlagen:",retryError)}
+      },2000);
+    }
+  }catch(error){
+    console.error("Initialisierung fehlgeschlagen:",error);
+    $("#login-screen").classList.remove("hidden");
+    $("#dashboard").classList.add("hidden");
+  }
+}
 $('#login-form').addEventListener('submit',async e=>{e.preventDefault();showError('');const btn=e.currentTarget.querySelector('button[type="submit"]');btn.disabled=true;btn.textContent='Anmeldung läuft …';const{data,error}=await db.auth.signInWithPassword({email:$('#login-user').value.trim(),password:$('#login-password').value});btn.disabled=false;btn.textContent='Portal öffnen';if(error){showError('Anmeldung fehlgeschlagen. Bitte E-Mail-Adresse und Passwort prüfen.');return}session=data.session;try{await loadProfile();await openDashboard()}catch(x){await db.auth.signOut();showError(x.message)}});
 $('#logout-button').addEventListener('click',async()=>{if(realtimeChannel)await db.removeChannel(realtimeChannel);await db.auth.signOut();location.reload()});
 $('#reset-demo').addEventListener('click',loadData);$('#notification-button').addEventListener('click',enableNotifications);$('#mobile-menu').addEventListener('click',()=>$('.sidebar').classList.toggle('open'));
@@ -281,7 +386,7 @@ function dispatchDriverConfirmation(ride){
   }).join("");
 }
 
-function renderDispatch(){if(!canDispatch()||!$('#dispatch-rides'))return;const open=rides.filter(r=>r.status!=='Abgeschlossen'),active=rides.filter(r=>r.status==='Unterwegs'),freeV=fleet.filter(v=>v.status==='Verfügbar'),freeD=drivers.filter(d=>driverState(d).label==='Frei');$('#dispatch-open-count').textContent=open.length;$('#dispatch-free-vehicles').textContent=freeV.length;$('#dispatch-free-drivers').textContent=freeD.length;$('#dispatch-active-count').textContent=active.length;$('#dispatch-vehicles').innerHTML=fleet.length?fleet.map(v=>`<button class="dispatch-item dispatch-vehicle-item ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}" data-edit-vehicle="${v.id}"><span class="vehicle-icon">🚕</span><span class="dispatch-item-copy"><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.plate)}</small><em>${escapeHtml(v.location)} · ${escapeHtml(v.fuel_level)}</em></span><span class="visual-status ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}"><i></i>${escapeHtml(v.status)}</span></button>`).join(''):'<div class="empty">Noch keine Fahrzeuge.</div>';$('#dispatch-rides').innerHTML=open.length?open.map(r=>`<article class="dispatch-ride ${r.status==='Unterwegs'?'ride-active':r.status==='Zugewiesen'?'ride-assigned':'ride-open'}"><div class="dispatch-ride-time"><strong>${escapeHtml((r.ride_time||'').slice(0,5)||'–')}</strong><span>${formatDate(r.ride_date)}</span></div><div class="dispatch-route"><div class="route-point pickup"><i></i><span><small>Abholung</small><strong>${escapeHtml(r.pickup)}</strong></span></div><div class="route-line"></div><div class="route-point destination"><i></i><span><small>Ziel</small><strong>${escapeHtml(r.destination)}</strong></span></div></div><div class="dispatch-ride-copy"><strong>${escapeHtml(r.customer_name)}</strong><div><span>👨‍✈️ ${escapeHtml(driverLabel(r))}</span><span>🚕 ${escapeHtml(r.vehicle_name||'Fahrzeug offen')}</span>${r.is_recurring?'<span>↻ Serie</span>':''}</div></div><div class="dispatch-confirmation-line">${dispatchDriverConfirmation(ride)}</div><div class="dispatch-ride-actions"><span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span><button data-edit-ride="${r.id}">Bearbeiten</button></div></article>`).join(''):'<div class="empty">Keine offenen Fahrten.</div>';$('#dispatch-drivers').innerHTML=drivers.length?drivers.map(d=>{const st=driverState(d);return`<article class="dispatch-item driver-item ${st.className}"><span class="driver-avatar">${escapeHtml((d.full_name||'?').charAt(0).toUpperCase())}</span><span class="dispatch-item-copy"><strong>${escapeHtml(d.full_name)}</strong><small>${st.ride?'Aktuell: '+escapeHtml(st.ride.destination):'Bereit für neue Fahrt'}</small></span><span class="visual-status ${st.className}"><i></i>${st.label}</span></article>`}).join(''):'<div class="empty">Noch keine Fahrer.</div>';bindEditButtons()}
+function renderDispatch(){if(!canDispatch()||!$('#dispatch-rides'))return;const open=rides.filter(r=>r.status!=='Abgeschlossen'),active=rides.filter(r=>r.status==='Unterwegs'),freeV=fleet.filter(v=>v.status==='Verfügbar'),freeD=drivers.filter(d=>driverState(d).label==='Frei');$('#dispatch-open-count').textContent=open.length;$('#dispatch-free-vehicles').textContent=freeV.length;$('#dispatch-free-drivers').textContent=freeD.length;$('#dispatch-active-count').textContent=active.length;$('#dispatch-vehicles').innerHTML=fleet.length?fleet.map(v=>`<button class="dispatch-item dispatch-vehicle-item ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}" data-edit-vehicle="${v.id}"><span class="vehicle-icon">🚕</span><span class="dispatch-item-copy"><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.plate)}</small><em>${escapeHtml(v.location)} · ${escapeHtml(v.fuel_level)}</em></span><span class="visual-status ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}"><i></i>${escapeHtml(v.status)}</span></button>`).join(''):'<div class="empty">Noch keine Fahrzeuge.</div>';$('#dispatch-rides').innerHTML=open.length?open.map(r=>`<article class="dispatch-ride ${r.status==='Unterwegs'?'ride-active':r.status==='Zugewiesen'?'ride-assigned':'ride-open'}"><div class="dispatch-ride-time"><strong>${escapeHtml((r.ride_time||'').slice(0,5)||'–')}</strong><span>${formatDate(r.ride_date)}</span></div><div class="dispatch-route"><div class="route-point pickup"><i></i><span><small>Abholung</small><strong>${escapeHtml(r.pickup)}</strong></span></div><div class="route-line"></div><div class="route-point destination"><i></i><span><small>Ziel</small><strong>${escapeHtml(r.destination)}</strong></span></div></div><div class="dispatch-ride-copy"><strong>${escapeHtml(r.customer_name)}</strong><div><span>👨‍✈️ ${escapeHtml(driverLabel(r))}</span><span>🚕 ${escapeHtml(r.vehicle_name||'Fahrzeug offen')}</span>${r.is_recurring?'<span>↻ Serie</span>':''}</div></div><div class="dispatch-confirmation-line">${dispatchDriverConfirmation(r)}</div><div class="dispatch-ride-actions"><span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span><button data-edit-ride="${r.id}">Bearbeiten</button></div></article>`).join(''):'<div class="empty">Keine offenen Fahrten.</div>';$('#dispatch-drivers').innerHTML=drivers.length?drivers.map(d=>{const st=driverState(d);return`<article class="dispatch-item driver-item ${st.className}"><span class="driver-avatar">${escapeHtml((d.full_name||'?').charAt(0).toUpperCase())}</span><span class="dispatch-item-copy"><strong>${escapeHtml(d.full_name)}</strong><small>${st.ride?'Aktuell: '+escapeHtml(st.ride.destination):'Bereit für neue Fahrt'}</small></span><span class="visual-status ${st.className}"><i></i>${st.label}</span></article>`}).join(''):'<div class="empty">Noch keine Fahrer.</div>';bindEditButtons()}
 function renderStats(){
 const today=isoDate(new Date());
 if(profile?.role==="driver"){
@@ -738,5 +843,22 @@ $('#open-recurring').addEventListener('click',()=>openRecurring());
 $('#recurring-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,raw=Object.fromEntries(new FormData(f)),weekdays=$$('#recurring-weekdays input:checked').map(i=>Number(i.value)),sel=selectedDrivers('#recurring-driver-list'),vehicle=fleet.find(v=>v.id===raw.vehicle);if(!weekdays.length){alert('Bitte mindestens einen Wochentag auswählen.');return}const payload={title:raw.title,passenger_name:raw.passenger,customer_phone:raw.phone||null,pickup:raw.pickup,destination:raw.destination,start_date:raw.start_date,end_date:raw.end_date||null,weekdays,ride_time:raw.time,assigned_drivers:sel.ids,driver_names:sel.names,vehicle_id:raw.vehicle||null,vehicle_name:vehicle?.name||null,ride_type:raw.type,note:raw.note||null,active:true};let id=raw.id;if(id){const{error}=await db.from('recurring_series').update(payload).eq('id',id);if(error){alert(error.message);return}await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen')}else{const{data,error}=await db.from('recurring_series').insert(payload).select('id').single();if(error){alert(error.message);return}id=data.id}await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))});$('#recurring-dialog').close();await loadData()});
 async function toggleSeries(id){const s=series.find(x=>x.id===id);if(!s)return;const active=!s.active;const{error}=await db.from('recurring_series').update({active}).eq('id',id);if(error){alert(error.message);return}if(!active)await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen');else await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))})}
 function renderAll(){renderDispatch();renderStats();renderOverview();renderRides();renderFleet();renderCalendar();renderRecurring()}
-db.auth.onAuthStateChange((event,newSession)=>{if(event==='SIGNED_OUT'){session=null;profile=null}else if(newSession)session=newSession});initialize();
+db.auth.onAuthStateChange((event,newSession)=>{
+  console.info("Taxi Erbas Auth:",event);
+  if(event==="SIGNED_OUT"){
+    session=null;
+    profile=null;
+    if(mobileSyncTimer)clearInterval(mobileSyncTimer);
+    mobileSyncTimer=null;
+    mobileSyncStarted=false;
+    return;
+  }
+  if(newSession){
+    session=newSession;
+    if(event==="TOKEN_REFRESHED" || event==="SIGNED_IN"){
+      loadData().catch(()=>{});
+    }
+  }
+});
+initialize();
 })();

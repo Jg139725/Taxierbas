@@ -10,7 +10,11 @@ window.taxiSupabase = window.supabase.createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storage: window.localStorage,
+      storageKey: "taxi-erbas-auth-v1"
     }
   }
 );
+
+console.info("Taxi Erbas Supabase 13.8 geladen");
