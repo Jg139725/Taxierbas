@@ -1042,3 +1042,26 @@ button.dispatch-item:hover{
 
 /* Paket 13.8 – Mobile Sync */
 body.portal-offline::after{content:"Keine Internetverbindung – das Portal synchronisiert automatisch, sobald du wieder online bist.";position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;padding:11px 14px;border-radius:12px;background:#8b3030;color:#fff;text-align:center;font-size:12px;font-weight:800;box-shadow:0 12px 30px rgba(0,0,0,.3)}
+
+
+/* ==========================================================
+   PAKET 13.9 – FAHRERRECHTE & LIVE-SYNC
+   ========================================================== */
+
+body.driver-portal [data-open-ride],
+body.driver-portal [data-open-vehicle],
+body.driver-portal #open-recurring,
+body.driver-portal #day-new-ride,
+body.driver-portal .dispatch-nav,
+body.driver-portal .recurring-nav{
+  display:none!important;
+}
+
+body.driver-portal .driver-create-blocked{
+  display:none!important;
+}
+
+.sync-status-indicator{
+  font-size:9px;
+  color:rgba(255,255,255,.42);
+}

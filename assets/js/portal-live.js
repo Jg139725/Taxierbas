@@ -2,6 +2,7 @@
 "use strict";
 const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.8 geladen");
 let mobileSyncTimer=null;
+let realtimeWatchdogTimer=null;
 let mobileSyncStarted=false;
 let dataLoadInFlight=null;
 let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],rideConfirmations=[],realtimeChannel=null,clockTimer=null;
@@ -77,7 +78,10 @@ async function confirmDriverRide(rideId){
     confirmed_at:new Date().toISOString()
   },{onConflict:"ride_id,driver_id"});
   if(error){alert("Fahrt konnte nicht bestätigt werden: "+error.message);return false}
+
+  await new Promise(resolve=>setTimeout(resolve,250));
   await loadData();
+
   return true
 }
 
@@ -255,7 +259,12 @@ if(results[1].error)throw results[1].error;
 rides=results[0].data||[];
 fleet=results[1].data||[];
 ridePassengers=results[2].error?[]:(results[2].data||[]);
-rideConfirmations=results[3].error?[]:(results[3].data||[]);
+if(results[3].error){
+  console.error("Bestätigungsstatus konnte nicht geladen werden:",results[3].error);
+  rideConfirmations=[];
+}else{
+  rideConfirmations=results[3].data||[];
+}
 drivers=canDispatch()&&!results[4]?.error?(results[4].data||[]):[];
 series=canDispatch()&&!results[5]?.error?(results[5].data||[]):[];
 knownRideIds=new Set(rides.map(r=>r.id));
@@ -283,7 +292,19 @@ function subscribeRealtime(){
     .on("postgres_changes",{event:"*",schema:"public",table:"ride_passengers"},refresh)
     .subscribe(status=>{
       console.info("Taxi Erbas Realtime:",status);
-      if(status==="SUBSCRIBED")refresh();
+
+      if(status==="SUBSCRIBED"){
+        refresh();
+        return;
+      }
+
+      if(status==="CHANNEL_ERROR" || status==="TIMED_OUT" || status==="CLOSED"){
+        console.warn("Realtime getrennt – erneuter Verbindungsversuch läuft.");
+        clearTimeout(realtimeWatchdogTimer);
+        realtimeWatchdogTimer=setTimeout(()=>{
+          if(session && navigator.onLine)subscribeRealtime();
+        },3000);
+      }
     });
 }
 
@@ -296,7 +317,7 @@ function startMobileSync(){
     if(session && document.visibilityState==="visible" && navigator.onLine){
       loadData().catch(()=>{});
     }
-  },10000);
+  },5000);
 
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState==="visible" && session){
@@ -327,7 +348,12 @@ function startMobileSync(){
 function startClock(){const f=()=>{const n=new Date();if($("#dispatch-clock"))$("#dispatch-clock").textContent=n.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});if($("#dispatch-date"))$("#dispatch-date").textContent=n.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})};f();clearInterval(clockTimer);clockTimer=setInterval(f,30000)}
 function updateNotificationUI(){const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;const state=Notification.permission;s.textContent=state==="granted"?"aktiv":state==="denied"?"im Browser blockiert":"nicht aktiviert";b.classList.toggle("notification-on",state==="granted")}
 async function enableNotifications(){if(!("Notification"in window)){alert("Dieser Browser unterstützt Benachrichtigungen nicht.");return}const p=await Notification.requestPermission();updateNotificationUI();if(p==="granted"){const reg=await navigator.serviceWorker?.ready;reg?.showNotification("Taxi Erbas",{body:"Benachrichtigungen sind aktiviert.",icon:"assets/images/taxi-erbas-original-logo.png"})}}
-async function openDashboard(){startMobileSync();$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
+async function openDashboard(){
+startMobileSync();
+document.body.dataset.portalRole=profile?.role||"";
+document.body.classList.toggle("driver-portal",profile?.role==="driver");
+document.body.classList.toggle("dispatch-portal",canDispatch());
+$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
 async function initialize(){
   if("serviceWorker" in navigator){
     navigator.serviceWorker.register("portal-sw.js").catch(console.warn);
@@ -380,9 +406,11 @@ function dispatchDriverConfirmation(ride){
   if(!ids.length)return '<span class="dispatch-driver-confirm neutral">Kein Fahrer</span>';
   return ids.map(id=>{
     const d=drivers.find(x=>x.id===id);
+    const index=rideDriverIds(ride).indexOf(id);
+    const fallbackName=Array.isArray(ride.driver_names)?ride.driver_names[index]:null;
     const info=officeConfirmationInfo(ride.id,id);
     const icon=info.className==="confirmed"?"✓":info.className==="declined"?"✕":"•";
-    return `<span class="dispatch-driver-confirm ${info.className}"><strong>${escapeHtml(d?.full_name||"Fahrer")}</strong><em>${icon} ${info.label}</em></span>`;
+    return `<span class="dispatch-driver-confirm ${info.className}"><strong>${escapeHtml(d?.full_name||fallbackName||ride.driver_name||"Fahrer")}</strong><em>${icon} ${info.label}</em></span>`;
   }).join("");
 }
 
@@ -680,6 +708,7 @@ $('#add-group-driver')?.addEventListener('click',()=>{
 document.addEventListener('click',e=>{
   const rideButton=e.target.closest('[data-open-ride]');
   if(rideButton){
+    if(!canDispatch()){e.preventDefault();console.warn('Fahrer dürfen keine Fahrten anlegen.');return;}
     e.preventDefault();
     openRide().catch(err=>{
       console.error('Neue Fahrt konnte nicht geöffnet werden:',err);
@@ -839,8 +868,8 @@ $('#calendar-prev').addEventListener('click',()=>{calendarCursor=new Date(calend
 function renderRecurring(){if(!canDispatch()||!$('#recurring-list'))return;$('#recurring-list').innerHTML=series.length?series.map(s=>`<article class="recurring-card ${s.active?'':'inactive'}"><div class="recurring-card-top"><span class="series-icon">↻</span><div><small>${escapeHtml(s.title)}</small><h3>${escapeHtml(s.passenger_name)}</h3></div><span class="${s.active?'badge':'badge danger'}">${s.active?'Aktiv':'Pausiert'}</span></div><div class="series-route"><span>${escapeHtml(s.pickup)}</span><b>→</b><span>${escapeHtml(s.destination)}</span></div><div class="series-meta"><span>🕒 ${(s.ride_time||'').slice(0,5)}</span><span>📅 ${weekdayNames(s.weekdays)}</span><span>👨‍✈️ ${escapeHtml((s.driver_names||[]).join(' + ')||'Fahrer offen')}</span></div><div class="series-actions"><button data-edit-series="${s.id}">Bearbeiten</button><button data-toggle-series="${s.id}">${s.active?'Pausieren':'Aktivieren'}</button></div></article>`).join(''):'<div class="empty">Noch keine Wiederholungsfahrten angelegt.</div>';$$('[data-edit-series]').forEach(b=>b.onclick=()=>openRecurring(series.find(s=>s.id===b.dataset.editSeries)));$$('[data-toggle-series]').forEach(b=>b.onclick=()=>toggleSeries(b.dataset.toggleSeries))}
 function weekdayNames(a=[]){const n=['So','Mo','Di','Mi','Do','Fr','Sa'];return a.map(x=>n[x]).join(', ')}
 function openRecurring(s=null){const f=$('#recurring-form');f.reset();f.elements.id.value=s?.id||'';f.elements.title.value=s?.title||'';f.elements.passenger.value=s?.passenger_name||'';f.elements.phone.value=s?.customer_phone||'';f.elements.time.value=(s?.ride_time||'').slice(0,5);f.elements.pickup.value=s?.pickup||'';f.elements.destination.value=s?.destination||'';f.elements.start_date.value=s?.start_date||isoDate(new Date());f.elements.end_date.value=s?.end_date||'';f.elements.type.value=s?.ride_type||'Taxifahrt';f.elements.note.value=s?.note||'';$$('#recurring-weekdays input').forEach(i=>i.checked=(s?.weekdays||[]).includes(Number(i.value)));driverCheckboxes('#recurring-driver-list',s?.assigned_drivers||[]);refreshVehicleOptions($('#recurring-vehicle-select'),s?.vehicle_id||'');$('#recurring-dialog').showModal()}
-$('#open-recurring').addEventListener('click',()=>openRecurring());
-$('#recurring-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,raw=Object.fromEntries(new FormData(f)),weekdays=$$('#recurring-weekdays input:checked').map(i=>Number(i.value)),sel=selectedDrivers('#recurring-driver-list'),vehicle=fleet.find(v=>v.id===raw.vehicle);if(!weekdays.length){alert('Bitte mindestens einen Wochentag auswählen.');return}const payload={title:raw.title,passenger_name:raw.passenger,customer_phone:raw.phone||null,pickup:raw.pickup,destination:raw.destination,start_date:raw.start_date,end_date:raw.end_date||null,weekdays,ride_time:raw.time,assigned_drivers:sel.ids,driver_names:sel.names,vehicle_id:raw.vehicle||null,vehicle_name:vehicle?.name||null,ride_type:raw.type,note:raw.note||null,active:true};let id=raw.id;if(id){const{error}=await db.from('recurring_series').update(payload).eq('id',id);if(error){alert(error.message);return}await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen')}else{const{data,error}=await db.from('recurring_series').insert(payload).select('id').single();if(error){alert(error.message);return}id=data.id}await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))});$('#recurring-dialog').close();await loadData()});
+$('#open-recurring').addEventListener('click',()=>{if(!canDispatch())return;openRecurring()});
+$('#recurring-form').addEventListener('submit',async e=>{e.preventDefault();if(!canDispatch())return;const f=e.currentTarget,raw=Object.fromEntries(new FormData(f)),weekdays=$$('#recurring-weekdays input:checked').map(i=>Number(i.value)),sel=selectedDrivers('#recurring-driver-list'),vehicle=fleet.find(v=>v.id===raw.vehicle);if(!weekdays.length){alert('Bitte mindestens einen Wochentag auswählen.');return}const payload={title:raw.title,passenger_name:raw.passenger,customer_phone:raw.phone||null,pickup:raw.pickup,destination:raw.destination,start_date:raw.start_date,end_date:raw.end_date||null,weekdays,ride_time:raw.time,assigned_drivers:sel.ids,driver_names:sel.names,vehicle_id:raw.vehicle||null,vehicle_name:vehicle?.name||null,ride_type:raw.type,note:raw.note||null,active:true};let id=raw.id;if(id){const{error}=await db.from('recurring_series').update(payload).eq('id',id);if(error){alert(error.message);return}await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen')}else{const{data,error}=await db.from('recurring_series').insert(payload).select('id').single();if(error){alert(error.message);return}id=data.id}await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))});$('#recurring-dialog').close();await loadData()});
 async function toggleSeries(id){const s=series.find(x=>x.id===id);if(!s)return;const active=!s.active;const{error}=await db.from('recurring_series').update({active}).eq('id',id);if(error){alert(error.message);return}if(!active)await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen');else await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))})}
 function renderAll(){renderDispatch();renderStats();renderOverview();renderRides();renderFleet();renderCalendar();renderRecurring()}
 db.auth.onAuthStateChange((event,newSession)=>{
