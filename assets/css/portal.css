@@ -1029,3 +1029,13 @@ button.dispatch-item:hover{
 .office-overall-confirm.declined{color:#ff9f9f;background:rgba(255,107,107,.1)}
 .office-overall-confirm.neutral{color:#b7bdc7;background:rgba(255,255,255,.06)}
 @media(max-width:760px){.office-confirm-list{display:grid;grid-template-columns:1fr}.office-confirm-item{justify-content:space-between}}
+
+/* Paket 13.7.1 – Leitstellen-Bestätigung sichtbar */
+.dispatch-confirmation-line{display:flex;flex-wrap:wrap;gap:6px;grid-column:2/4;margin-top:7px}
+.dispatch-driver-confirm{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:800;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04)}
+.dispatch-driver-confirm strong{color:#fff;font-size:9px}.dispatch-driver-confirm em{font-style:normal;font-size:9px;font-weight:900}
+.dispatch-driver-confirm.pending{border-color:rgba(246,199,0,.25);background:rgba(246,199,0,.08)}.dispatch-driver-confirm.pending em{color:#f5d86d}
+.dispatch-driver-confirm.confirmed{border-color:rgba(81,220,134,.25);background:rgba(81,220,134,.09)}.dispatch-driver-confirm.confirmed em{color:#91e4af}
+.dispatch-driver-confirm.declined{border-color:rgba(255,107,107,.25);background:rgba(255,107,107,.09)}.dispatch-driver-confirm.declined em{color:#ff9f9f}
+.dispatch-driver-confirm.neutral{color:#b6bcc5}
+.office-ride-confirm-line{width:100%;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
