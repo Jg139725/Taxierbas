@@ -1075,3 +1075,14 @@ body.driver-portal .recurring-nav{
   color:#ff9f9f;
   background:rgba(255,107,107,.11);
 }
+
+
+/* Paket 14.1 – iPhone Auth Reload */
+body.auth-loading{
+  background:#08111c;
+}
+
+body.auth-loading #login-screen,
+body.auth-loading #dashboard{
+  visibility:hidden!important;
+}

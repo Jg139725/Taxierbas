@@ -16,4 +16,4 @@ window.taxiSupabase = window.supabase.createClient(
   }
 );
 
-console.info("Taxi Erbas Supabase STABIL 14.0");
+console.info("Taxi Erbas Auth 14.1 geladen");

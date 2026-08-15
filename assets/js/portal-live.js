@@ -1,6 +1,9 @@
 (() => {
 "use strict";
-const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.3 geladen");
+const db=window.taxiSupabase;
+let authBootstrapFinished=false;
+let authBootstrapTimer=null;
+ console.info("Taxi Erbas Portal Version 13.3 geladen");
 let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],rideConfirmations=[],realtimeChannel=null,clockTimer=null;
 let stableSyncTimer=null;
 let stableSyncStarted=false;
@@ -249,6 +252,31 @@ function bindDriverRideDetails(){
   })
 }
 
+
+function showAuthLoading(){
+  $("#login-screen")?.classList.add("hidden");
+  $("#dashboard")?.classList.add("hidden");
+  document.body.classList.add("auth-loading");
+}
+
+function showAuthLogin(){
+  document.body.classList.remove("auth-loading");
+  $("#dashboard")?.classList.add("hidden");
+  $("#login-screen")?.classList.remove("hidden");
+}
+
+async function restoreAuthenticatedPortal(currentSession){
+  if(!currentSession)return false;
+
+  session=currentSession;
+  document.body.classList.remove("auth-loading");
+  $("#login-screen")?.classList.add("hidden");
+
+  await loadProfile();
+  await openDashboard();
+  return true;
+}
+
 function showError(m){$("#login-error").textContent=m||"Es ist ein Fehler aufgetreten."}
 function badgeClass(v){if(["Werkstatt","Nicht verfügbar","Reinigung erforderlich","Reserve"].includes(v))return"badge danger";if(["Unterwegs","Leicht verschmutzt","¼ voll","Halbvoll","Offen"].includes(v))return"badge warn";return"badge"}
 async function loadProfile(){const{data,error}=await db.from("profiles").select("id,full_name,role,active").eq("id",session.user.id).single();if(error)throw new Error("Mitarbeiterprofil konnte nicht geladen werden.");if(!data.active)throw new Error("Dieser Mitarbeiterzugang wurde deaktiviert.");profile=data}
@@ -416,53 +444,58 @@ document.body.classList.toggle("driver-portal",profile?.role==="driver");
 document.body.classList.toggle("office-portal",canDispatch());
 $("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
 async function initialize(){
-  try{
-    // Alten Service-Worker nur aktualisieren, aber KEINE Seiten/JS-Dateien cachen.
-    if("serviceWorker" in navigator){
-      navigator.serviceWorker.register("portal-sw.js?v=14.0").catch(console.warn);
-    }
+  showAuthLoading();
 
-    const {data,error}=await db.auth.getSession();
-    if(error)console.warn("Session-Lesen:",error);
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("portal-sw.js?v=14.1").catch(console.warn);
+  }
 
-    session=data?.session||null;
+  // Supabase restores persisted auth asynchronously.
+  // We wait for INITIAL_SESSION first, then use getSession as fallback.
+  clearTimeout(authBootstrapTimer);
 
-    if(!session){
-      $("#login-screen").classList.remove("hidden");
-      $("#dashboard").classList.add("hidden");
-      return;
-    }
-
-    $("#login-screen").classList.add("hidden");
+  authBootstrapTimer=setTimeout(async()=>{
+    if(authBootstrapFinished)return;
 
     try{
-      await loadProfile();
-      await openDashboard();
-    }catch(error){
-      console.error("Portal konnte noch nicht vollständig geladen werden:",error);
+      const {data,error}=await db.auth.getSession();
+      if(error)console.warn("Session-Fallback:",error);
 
-      // Session NICHT löschen. Bei Mobilfunk/WLAN kurz später erneut versuchen.
-      $("#dashboard").classList.remove("hidden");
-
-      setTimeout(async()=>{
+      if(data?.session){
         try{
-          const check=await db.auth.getSession();
-          if(!check.data?.session)return;
-          session=check.data.session;
-          await loadProfile();
-          await openDashboard();
-        }catch(retryError){
-          console.warn("Portal Retry:",retryError);
+          await restoreAuthenticatedPortal(data.session);
+        }catch(portalError){
+          console.error("Gespeicherte Session vorhanden, Portal-Daten noch nicht verfügbar:",portalError);
+
+          // Important: keep the authenticated state. Do not show login just
+          // because profile/data loading was briefly unavailable.
+          session=data.session;
+          document.body.classList.remove("auth-loading");
+          $("#login-screen")?.classList.add("hidden");
+          $("#dashboard")?.classList.remove("hidden");
+
+          setTimeout(async()=>{
+            try{
+              await loadProfile();
+              await openDashboard();
+            }catch(retryError){
+              console.warn("Portal Retry:",retryError);
+            }
+          },1200);
         }
-      },1500);
+      }else{
+        showAuthLogin();
+      }
+
+      authBootstrapFinished=true;
+    }catch(error){
+      console.error("Auth-Fallback:",error);
+      showAuthLogin();
+      authBootstrapFinished=true;
     }
-  }catch(error){
-    console.error("Portal Initialisierung:",error);
-    $("#login-screen").classList.remove("hidden");
-    $("#dashboard").classList.add("hidden");
-  }
+  },2200);
 }
-$('#login-form').addEventListener('submit',async e=>{e.preventDefault();showError('');const btn=e.currentTarget.querySelector('button[type="submit"]');btn.disabled=true;btn.textContent='Anmeldung läuft …';const{data,error}=await db.auth.signInWithPassword({email:$('#login-user').value.trim(),password:$('#login-password').value});btn.disabled=false;btn.textContent='Portal öffnen';if(error){showError('Anmeldung fehlgeschlagen. Bitte E-Mail-Adresse und Passwort prüfen.');return}session=data.session;try{await loadProfile();await openDashboard()}catch(x){await db.auth.signOut();showError(x.message)}});
+$('#login-form').addEventListener('submit',async e=>{e.preventDefault();showError('');const btn=e.currentTarget.querySelector('button[type="submit"]');btn.disabled=true;btn.textContent='Anmeldung läuft …';const{data,error}=await db.auth.signInWithPassword({email:$('#login-user').value.trim(),password:$('#login-password').value});btn.disabled=false;btn.textContent='Portal öffnen';if(error){showError('Anmeldung fehlgeschlagen. Bitte E-Mail-Adresse und Passwort prüfen.');return}session=data.session;try{await loadProfile();await openDashboard()}catch(x){console.error(x);showError('Anmeldung war erfolgreich, aber die Portaldaten konnten gerade nicht geladen werden. Bitte kurz warten.');setTimeout(async()=>{try{await loadProfile();await openDashboard()}catch(retry){console.warn(retry)}},1200)}});
 $('#logout-button').addEventListener('click',async()=>{if(realtimeChannel)await db.removeChannel(realtimeChannel);await db.auth.signOut();location.reload()});
 $('#reset-demo').addEventListener('click',loadData);$('#notification-button').addEventListener('click',enableNotifications);$('#mobile-menu').addEventListener('click',()=>$('.sidebar').classList.toggle('open'));
 $$('.nav-button').forEach(btn=>btn.addEventListener('click',()=>{$$('.nav-button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$$('.view').forEach(v=>v.classList.remove('active'));$('#view-'+btn.dataset.view).classList.add('active');$('#page-title').textContent=btn.textContent;$('.sidebar').classList.remove('open');if(btn.dataset.view==='calendar')renderCalendar()}));
@@ -925,5 +958,95 @@ $('#open-recurring').addEventListener('click',()=>{if(!canDispatch())return;open
 $('#recurring-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,raw=Object.fromEntries(new FormData(f)),weekdays=$$('#recurring-weekdays input:checked').map(i=>Number(i.value)),sel=selectedDrivers('#recurring-driver-list'),vehicle=fleet.find(v=>v.id===raw.vehicle);if(!weekdays.length){alert('Bitte mindestens einen Wochentag auswählen.');return}const payload={title:raw.title,passenger_name:raw.passenger,customer_phone:raw.phone||null,pickup:raw.pickup,destination:raw.destination,start_date:raw.start_date,end_date:raw.end_date||null,weekdays,ride_time:raw.time,assigned_drivers:sel.ids,driver_names:sel.names,vehicle_id:raw.vehicle||null,vehicle_name:vehicle?.name||null,ride_type:raw.type,note:raw.note||null,active:true};let id=raw.id;if(id){const{error}=await db.from('recurring_series').update(payload).eq('id',id);if(error){alert(error.message);return}await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen')}else{const{data,error}=await db.from('recurring_series').insert(payload).select('id').single();if(error){alert(error.message);return}id=data.id}await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))});$('#recurring-dialog').close();await loadData()});
 async function toggleSeries(id){const s=series.find(x=>x.id===id);if(!s)return;const active=!s.active;const{error}=await db.from('recurring_series').update({active}).eq('id',id);if(error){alert(error.message);return}if(!active)await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen');else await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))})}
 function renderAll(){renderDispatch();renderStats();renderOverview();renderRides();renderFleet();renderCalendar();renderRecurring()}
-db.auth.onAuthStateChange((event,newSession)=>{if(event==='SIGNED_OUT'){session=null;profile=null}else if(newSession)session=newSession});initialize();
+db.auth.onAuthStateChange((event,newSession)=>{
+  console.info("Taxi Erbas Auth:",event);
+
+  if(event==="INITIAL_SESSION"){
+    clearTimeout(authBootstrapTimer);
+
+    setTimeout(async()=>{
+      try{
+        if(newSession){
+          try{
+            await restoreAuthenticatedPortal(newSession);
+          }catch(portalError){
+            console.error("INITIAL_SESSION vorhanden, Portal-Daten fehlen temporär:",portalError);
+
+            session=newSession;
+            document.body.classList.remove("auth-loading");
+            $("#login-screen")?.classList.add("hidden");
+            $("#dashboard")?.classList.remove("hidden");
+
+            setTimeout(async()=>{
+              try{
+                await loadProfile();
+                await openDashboard();
+              }catch(retryError){
+                console.warn("INITIAL_SESSION Retry:",retryError);
+              }
+            },1200);
+          }
+        }else{
+          // Double-check storage once before showing login.
+          const {data}=await db.auth.getSession();
+
+          if(data?.session){
+            await restoreAuthenticatedPortal(data.session);
+          }else{
+            showAuthLogin();
+          }
+        }
+      }catch(error){
+        console.error("INITIAL_SESSION Fehler:",error);
+
+        const {data}=await db.auth.getSession();
+        if(data?.session){
+          session=data.session;
+          document.body.classList.remove("auth-loading");
+          $("#login-screen")?.classList.add("hidden");
+          $("#dashboard")?.classList.remove("hidden");
+        }else{
+          showAuthLogin();
+        }
+      }finally{
+        authBootstrapFinished=true;
+      }
+    },0);
+
+    return;
+  }
+
+  if(event==="SIGNED_IN" && newSession){
+    session=newSession;
+
+    setTimeout(async()=>{
+      try{
+        await restoreAuthenticatedPortal(newSession);
+      }catch(error){
+        console.error("SIGNED_IN Portalfehler:",error);
+      }
+    },0);
+
+    return;
+  }
+
+  if(event==="TOKEN_REFRESHED" && newSession){
+    session=newSession;
+    return;
+  }
+
+  if(event==="USER_UPDATED" && newSession){
+    session=newSession;
+    return;
+  }
+
+  if(event==="SIGNED_OUT"){
+    session=null;
+    profile=null;
+    authBootstrapFinished=true;
+    showAuthLogin();
+  }
+});
+
+initialize();
 })();
