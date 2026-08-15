@@ -1,11 +1,9 @@
 (() => {
 "use strict";
-const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.8 geladen");
-let mobileSyncTimer=null;
-let realtimeWatchdogTimer=null;
-let mobileSyncStarted=false;
-let dataLoadInFlight=null;
+const db=window.taxiSupabase; console.info("Taxi Erbas Portal Version 13.3 geladen");
 let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],rideConfirmations=[],realtimeChannel=null,clockTimer=null;
+let stableSyncTimer=null;
+let stableSyncStarted=false;
 let calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=null,knownRideIds=new Set();
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
@@ -49,6 +47,25 @@ function officeOverallConfirmation(ride){
   return {label:"Bestätigung offen",className:"pending"};
 }
 
+function officeStatusCompact(ride){
+  const ids=rideDriverIds(ride);
+  if(!ids.length)return "";
+
+  return `<div class="office-status-compact">${ids.map((id,index)=>{
+    const info=officeConfirmationInfo(ride.id,id);
+    const name=drivers.find(d=>d.id===id)?.full_name
+      || (Array.isArray(ride.driver_names)?ride.driver_names[index]:null)
+      || ride.driver_name
+      || "Fahrer";
+    const symbol=info.className==="confirmed"?"✓":info.className==="declined"?"✕":"•";
+
+    return `<span class="${info.className}">
+      ${escapeHtml(name)} · ${symbol} ${info.label}
+    </span>`;
+  }).join("")}</div>`;
+}
+
+
 const isMine=r=>profile?.role!=="driver"||rideDriverIds(r).includes(profile.id);
 const myConfirmation=r=>rideConfirmations.find(c=>c.ride_id===r.id&&c.driver_id===profile?.id);
 const confirmationLabel=r=>{
@@ -78,10 +95,7 @@ async function confirmDriverRide(rideId){
     confirmed_at:new Date().toISOString()
   },{onConflict:"ride_id,driver_id"});
   if(error){alert("Fahrt konnte nicht bestätigt werden: "+error.message);return false}
-
-  await new Promise(resolve=>setTimeout(resolve,250));
   await loadData();
-
   return true
 }
 
@@ -239,7 +253,7 @@ function showError(m){$("#login-error").textContent=m||"Es ist ein Fehler aufget
 function badgeClass(v){if(["Werkstatt","Nicht verfügbar","Reinigung erforderlich","Reserve"].includes(v))return"badge danger";if(["Unterwegs","Leicht verschmutzt","¼ voll","Halbvoll","Offen"].includes(v))return"badge warn";return"badge"}
 async function loadProfile(){const{data,error}=await db.from("profiles").select("id,full_name,role,active").eq("id",session.user.id).single();if(error)throw new Error("Mitarbeiterprofil konnte nicht geladen werden.");if(!data.active)throw new Error("Dieser Mitarbeiterzugang wurde deaktiviert.");profile=data}
 async function refreshRecurring(){if(!canDispatch())return;try{await db.rpc("refresh_recurring_occurrences",{p_until:isoDate(new Date(Date.now()+365*86400000))})}catch(e){console.warn("Serienfahrten konnten nicht aktualisiert werden",e)}}
-async function coreLoadData(){
+async function loadData(){
 await refreshRecurring();
 const calls=[
   db.from("rides").select("*").order("ride_date").order("ride_time"),
@@ -259,32 +273,74 @@ if(results[1].error)throw results[1].error;
 rides=results[0].data||[];
 fleet=results[1].data||[];
 ridePassengers=results[2].error?[]:(results[2].data||[]);
-if(results[3].error){
-  console.error("Bestätigungsstatus konnte nicht geladen werden:",results[3].error);
-  rideConfirmations=[];
-}else{
-  rideConfirmations=results[3].data||[];
-}
+rideConfirmations=results[3].error?[]:(results[3].data||[]);
 drivers=canDispatch()&&!results[4]?.error?(results[4].data||[]):[];
 series=canDispatch()&&!results[5]?.error?(results[5].data||[]):[];
 knownRideIds=new Set(rides.map(r=>r.id));
 renderAll()
 }
-async function loadData(){
-  if(dataLoadInFlight)return dataLoadInFlight;
-  dataLoadInFlight=coreLoadData().catch(error=>{
-    console.error("Taxi Erbas Daten-Sync fehlgeschlagen:",error);
-    throw error;
-  }).finally(()=>{dataLoadInFlight=null});
-  return dataLoadInFlight;
+
+async function showPortalNotification(title,body){
+  if(!("Notification" in window) || Notification.permission!=="granted")return;
+
+  try{
+    if("serviceWorker" in navigator){
+      const reg=await navigator.serviceWorker.ready;
+      if(reg){
+        await reg.showNotification(title,{
+          body,
+          icon:"assets/images/taxi-erbas-original-logo.png",
+          badge:"assets/images/taxi-erbas-original-logo.png",
+          tag:"taxi-erbas-ride",
+          renotify:true,
+          data:{url:"portal.html"}
+        });
+        return;
+      }
+    }
+
+    new Notification(title,{body});
+  }catch(error){
+    console.warn("Benachrichtigung konnte nicht angezeigt werden:",error);
+  }
 }
+
+function notifyRide(payload){
+  if(profile?.role!=="driver")return;
+  if(!payload || !payload.new)return;
+
+  const ride=payload.new;
+  const assigned=Array.isArray(ride.assigned_drivers)
+    ? ride.assigned_drivers.includes(profile.id)
+    : ride.assigned_driver===profile.id;
+
+  if(!assigned)return;
+
+  const isNew=!knownRideIds.has(ride.id);
+  if(payload.eventType==="INSERT" || isNew){
+    showPortalNotification(
+      "Taxi Erbas – Neue Fahrt",
+      `${String(ride.ride_time||"").slice(0,5)} Uhr · ${ride.pickup||"Abholung"} → ${ride.destination||"Ziel"}`
+    );
+  }else{
+    showPortalNotification(
+      "Taxi Erbas – Fahrt geändert",
+      `${String(ride.ride_time||"").slice(0,5)} Uhr · Auftrag wurde aktualisiert`
+    );
+  }
+}
+
 function subscribeRealtime(){
   if(realtimeChannel)db.removeChannel(realtimeChannel);
 
-  const refresh=()=>loadData().catch(error=>console.warn("Realtime-Nachladen fehlgeschlagen",error));
+  const refresh=()=>loadData().catch(error=>console.warn("Live-Sync Fehler:",error));
 
-  realtimeChannel=db.channel("taxi-erbas-live-13-8")
-    .on("postgres_changes",{event:"*",schema:"public",table:"rides"},payload=>{notifyRide(payload);refresh()})
+  realtimeChannel=db
+    .channel("taxi-erbas-stabil-14")
+    .on("postgres_changes",{event:"*",schema:"public",table:"rides"},payload=>{
+      notifyRide(payload);
+      refresh();
+    })
     .on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},refresh)
     .on("postgres_changes",{event:"*",schema:"public",table:"profiles"},refresh)
     .on("postgres_changes",{event:"*",schema:"public",table:"recurring_series"},refresh)
@@ -292,32 +348,19 @@ function subscribeRealtime(){
     .on("postgres_changes",{event:"*",schema:"public",table:"ride_passengers"},refresh)
     .subscribe(status=>{
       console.info("Taxi Erbas Realtime:",status);
-
-      if(status==="SUBSCRIBED"){
-        refresh();
-        return;
-      }
-
-      if(status==="CHANNEL_ERROR" || status==="TIMED_OUT" || status==="CLOSED"){
-        console.warn("Realtime getrennt – erneuter Verbindungsversuch läuft.");
-        clearTimeout(realtimeWatchdogTimer);
-        realtimeWatchdogTimer=setTimeout(()=>{
-          if(session && navigator.onLine)subscribeRealtime();
-        },3000);
-      }
+      if(status==="SUBSCRIBED")refresh();
     });
 }
 
-function startMobileSync(){
-  if(mobileSyncStarted)return;
-  mobileSyncStarted=true;
+function startStableSync(){
+  if(stableSyncStarted)return;
+  stableSyncStarted=true;
 
-  if(mobileSyncTimer)clearInterval(mobileSyncTimer);
-  mobileSyncTimer=setInterval(()=>{
-    if(session && document.visibilityState==="visible" && navigator.onLine){
+  stableSyncTimer=setInterval(()=>{
+    if(session && navigator.onLine){
       loadData().catch(()=>{});
     }
-  },5000);
+  },8000);
 
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState==="visible" && session){
@@ -329,39 +372,59 @@ function startMobileSync(){
     if(session)loadData().catch(()=>{});
   });
 
-  window.addEventListener("pageshow",()=>{
-    if(session)loadData().catch(()=>{});
-  });
-
   window.addEventListener("online",()=>{
-    document.body.classList.remove("portal-offline");
     if(session){
       subscribeRealtime();
       loadData().catch(()=>{});
     }
   });
 
-  window.addEventListener("offline",()=>{
-    document.body.classList.add("portal-offline");
+  window.addEventListener("pageshow",()=>{
+    if(session)loadData().catch(()=>{});
   });
 }
+
 function startClock(){const f=()=>{const n=new Date();if($("#dispatch-clock"))$("#dispatch-clock").textContent=n.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});if($("#dispatch-date"))$("#dispatch-date").textContent=n.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})};f();clearInterval(clockTimer);clockTimer=setInterval(f,30000)}
 function updateNotificationUI(){const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;const state=Notification.permission;s.textContent=state==="granted"?"aktiv":state==="denied"?"im Browser blockiert":"nicht aktiviert";b.classList.toggle("notification-on",state==="granted")}
-async function enableNotifications(){if(!("Notification"in window)){alert("Dieser Browser unterstützt Benachrichtigungen nicht.");return}const p=await Notification.requestPermission();updateNotificationUI();if(p==="granted"){const reg=await navigator.serviceWorker?.ready;reg?.showNotification("Taxi Erbas",{body:"Benachrichtigungen sind aktiviert.",icon:"assets/images/taxi-erbas-original-logo.png"})}}
-async function openDashboard(){
-startMobileSync();
-document.body.dataset.portalRole=profile?.role||"";
-document.body.classList.toggle("driver-portal",profile?.role==="driver");
-document.body.classList.toggle("dispatch-portal",canDispatch());
-$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
-async function initialize(){
-  if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("portal-sw.js").catch(console.warn);
+async function enableNotifications(){
+  const isiOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const standalone=window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true;
+
+  if(isiOS && !standalone){
+    alert("Für Benachrichtigungen auf dem iPhone bitte das Taxi-Erbas-Portal zuerst über Teilen → Zum Home-Bildschirm hinzufügen öffnen. Danach dort auf Benachrichtigungen tippen.");
+    return;
   }
 
+  if(!("Notification" in window)){
+    alert("Dieser Browser unterstützt Benachrichtigungen hier nicht.");
+    return;
+  }
+
+  const permission=await Notification.requestPermission();
+  updateNotificationUI();
+
+  if(permission==="granted"){
+    await showPortalNotification(
+      "Taxi Erbas",
+      "Benachrichtigungen sind aktiviert."
+    );
+  }
+}
+async function openDashboard(){
+startStableSync();
+document.body.classList.toggle("driver-portal",profile?.role==="driver");
+document.body.classList.toggle("office-portal",canDispatch());
+$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
+async function initialize(){
   try{
+    // Alten Service-Worker nur aktualisieren, aber KEINE Seiten/JS-Dateien cachen.
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.register("portal-sw.js?v=14.0").catch(console.warn);
+    }
+
     const {data,error}=await db.auth.getSession();
-    if(error)console.warn("Gespeicherte Sitzung konnte nicht gelesen werden:",error);
+    if(error)console.warn("Session-Lesen:",error);
+
     session=data?.session||null;
 
     if(!session){
@@ -370,27 +433,31 @@ async function initialize(){
       return;
     }
 
-    // Wichtig: Bei einem kurzen Netzfehler NICHT automatisch ausloggen.
+    $("#login-screen").classList.add("hidden");
+
     try{
       await loadProfile();
       await openDashboard();
     }catch(error){
-      console.error("Portal konnte mit gespeicherter Sitzung noch nicht vollständig geladen werden:",error);
-      $("#login-screen").classList.add("hidden");
+      console.error("Portal konnte noch nicht vollständig geladen werden:",error);
+
+      // Session NICHT löschen. Bei Mobilfunk/WLAN kurz später erneut versuchen.
       $("#dashboard").classList.remove("hidden");
+
       setTimeout(async()=>{
         try{
           const check=await db.auth.getSession();
-          if(check.data?.session){
-            session=check.data.session;
-            await loadProfile();
-            await openDashboard();
-          }
-        }catch(retryError){console.warn("Portal-Retry fehlgeschlagen:",retryError)}
-      },2000);
+          if(!check.data?.session)return;
+          session=check.data.session;
+          await loadProfile();
+          await openDashboard();
+        }catch(retryError){
+          console.warn("Portal Retry:",retryError);
+        }
+      },1500);
     }
   }catch(error){
-    console.error("Initialisierung fehlgeschlagen:",error);
+    console.error("Portal Initialisierung:",error);
     $("#login-screen").classList.remove("hidden");
     $("#dashboard").classList.add("hidden");
   }
@@ -400,21 +467,7 @@ $('#logout-button').addEventListener('click',async()=>{if(realtimeChannel)await 
 $('#reset-demo').addEventListener('click',loadData);$('#notification-button').addEventListener('click',enableNotifications);$('#mobile-menu').addEventListener('click',()=>$('.sidebar').classList.toggle('open'));
 $$('.nav-button').forEach(btn=>btn.addEventListener('click',()=>{$$('.nav-button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$$('.view').forEach(v=>v.classList.remove('active'));$('#view-'+btn.dataset.view).classList.add('active');$('#page-title').textContent=btn.textContent;$('.sidebar').classList.remove('open');if(btn.dataset.view==='calendar')renderCalendar()}));
 function driverState(d){const ar=rides.find(r=>rideDriverIds(r).includes(d.id)&&["Zugewiesen","Unterwegs"].includes(r.status));if(!d.active)return{label:'Deaktiviert',className:'offline',ride:null};if(ar?.status==='Unterwegs')return{label:'Unterwegs',className:'busy',ride:ar};if(ar)return{label:'Zugewiesen',className:'reserved',ride:ar};return{label:'Frei',className:'free',ride:null}}
-
-function dispatchDriverConfirmation(ride){
-  const ids=rideDriverIds(ride);
-  if(!ids.length)return '<span class="dispatch-driver-confirm neutral">Kein Fahrer</span>';
-  return ids.map(id=>{
-    const d=drivers.find(x=>x.id===id);
-    const index=rideDriverIds(ride).indexOf(id);
-    const fallbackName=Array.isArray(ride.driver_names)?ride.driver_names[index]:null;
-    const info=officeConfirmationInfo(ride.id,id);
-    const icon=info.className==="confirmed"?"✓":info.className==="declined"?"✕":"•";
-    return `<span class="dispatch-driver-confirm ${info.className}"><strong>${escapeHtml(d?.full_name||fallbackName||ride.driver_name||"Fahrer")}</strong><em>${icon} ${info.label}</em></span>`;
-  }).join("");
-}
-
-function renderDispatch(){if(!canDispatch()||!$('#dispatch-rides'))return;const open=rides.filter(r=>r.status!=='Abgeschlossen'),active=rides.filter(r=>r.status==='Unterwegs'),freeV=fleet.filter(v=>v.status==='Verfügbar'),freeD=drivers.filter(d=>driverState(d).label==='Frei');$('#dispatch-open-count').textContent=open.length;$('#dispatch-free-vehicles').textContent=freeV.length;$('#dispatch-free-drivers').textContent=freeD.length;$('#dispatch-active-count').textContent=active.length;$('#dispatch-vehicles').innerHTML=fleet.length?fleet.map(v=>`<button class="dispatch-item dispatch-vehicle-item ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}" data-edit-vehicle="${v.id}"><span class="vehicle-icon">🚕</span><span class="dispatch-item-copy"><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.plate)}</small><em>${escapeHtml(v.location)} · ${escapeHtml(v.fuel_level)}</em></span><span class="visual-status ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}"><i></i>${escapeHtml(v.status)}</span></button>`).join(''):'<div class="empty">Noch keine Fahrzeuge.</div>';$('#dispatch-rides').innerHTML=open.length?open.map(r=>`<article class="dispatch-ride ${r.status==='Unterwegs'?'ride-active':r.status==='Zugewiesen'?'ride-assigned':'ride-open'}"><div class="dispatch-ride-time"><strong>${escapeHtml((r.ride_time||'').slice(0,5)||'–')}</strong><span>${formatDate(r.ride_date)}</span></div><div class="dispatch-route"><div class="route-point pickup"><i></i><span><small>Abholung</small><strong>${escapeHtml(r.pickup)}</strong></span></div><div class="route-line"></div><div class="route-point destination"><i></i><span><small>Ziel</small><strong>${escapeHtml(r.destination)}</strong></span></div></div><div class="dispatch-ride-copy"><strong>${escapeHtml(r.customer_name)}</strong><div><span>👨‍✈️ ${escapeHtml(driverLabel(r))}</span><span>🚕 ${escapeHtml(r.vehicle_name||'Fahrzeug offen')}</span>${r.is_recurring?'<span>↻ Serie</span>':''}</div></div><div class="dispatch-confirmation-line">${dispatchDriverConfirmation(r)}</div><div class="dispatch-ride-actions"><span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span><button data-edit-ride="${r.id}">Bearbeiten</button></div></article>`).join(''):'<div class="empty">Keine offenen Fahrten.</div>';$('#dispatch-drivers').innerHTML=drivers.length?drivers.map(d=>{const st=driverState(d);return`<article class="dispatch-item driver-item ${st.className}"><span class="driver-avatar">${escapeHtml((d.full_name||'?').charAt(0).toUpperCase())}</span><span class="dispatch-item-copy"><strong>${escapeHtml(d.full_name)}</strong><small>${st.ride?'Aktuell: '+escapeHtml(st.ride.destination):'Bereit für neue Fahrt'}</small></span><span class="visual-status ${st.className}"><i></i>${st.label}</span></article>`}).join(''):'<div class="empty">Noch keine Fahrer.</div>';bindEditButtons()}
+function renderDispatch(){if(!canDispatch()||!$('#dispatch-rides'))return;const open=rides.filter(r=>r.status!=='Abgeschlossen'),active=rides.filter(r=>r.status==='Unterwegs'),freeV=fleet.filter(v=>v.status==='Verfügbar'),freeD=drivers.filter(d=>driverState(d).label==='Frei');$('#dispatch-open-count').textContent=open.length;$('#dispatch-free-vehicles').textContent=freeV.length;$('#dispatch-free-drivers').textContent=freeD.length;$('#dispatch-active-count').textContent=active.length;$('#dispatch-vehicles').innerHTML=fleet.length?fleet.map(v=>`<button class="dispatch-item dispatch-vehicle-item ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}" data-edit-vehicle="${v.id}"><span class="vehicle-icon">🚕</span><span class="dispatch-item-copy"><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(v.plate)}</small><em>${escapeHtml(v.location)} · ${escapeHtml(v.fuel_level)}</em></span><span class="visual-status ${v.status==='Verfügbar'?'free':v.status==='Unterwegs'?'busy':'offline'}"><i></i>${escapeHtml(v.status)}</span></button>`).join(''):'<div class="empty">Noch keine Fahrzeuge.</div>';$('#dispatch-rides').innerHTML=open.length?open.map(r=>`<article class="dispatch-ride ${r.status==='Unterwegs'?'ride-active':r.status==='Zugewiesen'?'ride-assigned':'ride-open'}"><div class="dispatch-ride-time"><strong>${escapeHtml((r.ride_time||'').slice(0,5)||'–')}</strong><span>${formatDate(r.ride_date)}</span></div><div class="dispatch-route"><div class="route-point pickup"><i></i><span><small>Abholung</small><strong>${escapeHtml(r.pickup)}</strong></span></div><div class="route-line"></div><div class="route-point destination"><i></i><span><small>Ziel</small><strong>${escapeHtml(r.destination)}</strong></span></div></div><div class="dispatch-ride-copy"><strong>${escapeHtml(r.customer_name)}</strong><div><span>👨‍✈️ ${escapeHtml(driverLabel(r))}</span><span>🚕 ${escapeHtml(r.vehicle_name||'Fahrzeug offen')}</span>${officeStatusCompact(r)}${r.is_recurring?'<span>↻ Serie</span>':''}</div></div><div class="dispatch-ride-actions"><span class="${badgeClass(r.status)}">${escapeHtml(r.status)}</span><button data-edit-ride="${r.id}">Bearbeiten</button></div></article>`).join(''):'<div class="empty">Keine offenen Fahrten.</div>';$('#dispatch-drivers').innerHTML=drivers.length?drivers.map(d=>{const st=driverState(d);return`<article class="dispatch-item driver-item ${st.className}"><span class="driver-avatar">${escapeHtml((d.full_name||'?').charAt(0).toUpperCase())}</span><span class="dispatch-item-copy"><strong>${escapeHtml(d.full_name)}</strong><small>${st.ride?'Aktuell: '+escapeHtml(st.ride.destination):'Bereit für neue Fahrt'}</small></span><span class="visual-status ${st.className}"><i></i>${st.label}</span></article>`}).join(''):'<div class="empty">Noch keine Fahrer.</div>';bindEditButtons()}
 function renderStats(){
 const today=isoDate(new Date());
 if(profile?.role==="driver"){
@@ -470,7 +523,7 @@ if(profile?.role==="driver"){
       <div class="ride-main">
         <h3>${escapeHtml(r.customer_name)}</h3>
         <p>${escapeHtml(r.pickup)} → ${escapeHtml(r.destination)}</p>
-        <div class="ride-meta">${canDispatch()?`<div class="office-ride-confirm-line">${dispatchDriverConfirmation(r)}</div>`:""}
+        <div class="ride-meta">
           <span class="pill">🚕 ${escapeHtml(r.vehicle_name||"Fahrzeug offen")}</span>
           <span class="pill">${escapeHtml(r.ride_type||"Taxifahrt")}</span>
           <span class="confirmation-pill ${confirmed?"confirmed":c?.status==="declined"?"declined":"pending"}">${escapeHtml(confirmationLabel(r))}</span>
@@ -708,8 +761,8 @@ $('#add-group-driver')?.addEventListener('click',()=>{
 document.addEventListener('click',e=>{
   const rideButton=e.target.closest('[data-open-ride]');
   if(rideButton){
-    if(!canDispatch()){e.preventDefault();console.warn('Fahrer dürfen keine Fahrten anlegen.');return;}
     e.preventDefault();
+    if(!canDispatch())return;
     openRide().catch(err=>{
       console.error('Neue Fahrt konnte nicht geöffnet werden:',err);
       alert('Die Fahrtmaske konnte nicht geöffnet werden. Bitte die Seite einmal vollständig neu laden.');
@@ -869,25 +922,8 @@ function renderRecurring(){if(!canDispatch()||!$('#recurring-list'))return;$('#r
 function weekdayNames(a=[]){const n=['So','Mo','Di','Mi','Do','Fr','Sa'];return a.map(x=>n[x]).join(', ')}
 function openRecurring(s=null){const f=$('#recurring-form');f.reset();f.elements.id.value=s?.id||'';f.elements.title.value=s?.title||'';f.elements.passenger.value=s?.passenger_name||'';f.elements.phone.value=s?.customer_phone||'';f.elements.time.value=(s?.ride_time||'').slice(0,5);f.elements.pickup.value=s?.pickup||'';f.elements.destination.value=s?.destination||'';f.elements.start_date.value=s?.start_date||isoDate(new Date());f.elements.end_date.value=s?.end_date||'';f.elements.type.value=s?.ride_type||'Taxifahrt';f.elements.note.value=s?.note||'';$$('#recurring-weekdays input').forEach(i=>i.checked=(s?.weekdays||[]).includes(Number(i.value)));driverCheckboxes('#recurring-driver-list',s?.assigned_drivers||[]);refreshVehicleOptions($('#recurring-vehicle-select'),s?.vehicle_id||'');$('#recurring-dialog').showModal()}
 $('#open-recurring').addEventListener('click',()=>{if(!canDispatch())return;openRecurring()});
-$('#recurring-form').addEventListener('submit',async e=>{e.preventDefault();if(!canDispatch())return;const f=e.currentTarget,raw=Object.fromEntries(new FormData(f)),weekdays=$$('#recurring-weekdays input:checked').map(i=>Number(i.value)),sel=selectedDrivers('#recurring-driver-list'),vehicle=fleet.find(v=>v.id===raw.vehicle);if(!weekdays.length){alert('Bitte mindestens einen Wochentag auswählen.');return}const payload={title:raw.title,passenger_name:raw.passenger,customer_phone:raw.phone||null,pickup:raw.pickup,destination:raw.destination,start_date:raw.start_date,end_date:raw.end_date||null,weekdays,ride_time:raw.time,assigned_drivers:sel.ids,driver_names:sel.names,vehicle_id:raw.vehicle||null,vehicle_name:vehicle?.name||null,ride_type:raw.type,note:raw.note||null,active:true};let id=raw.id;if(id){const{error}=await db.from('recurring_series').update(payload).eq('id',id);if(error){alert(error.message);return}await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen')}else{const{data,error}=await db.from('recurring_series').insert(payload).select('id').single();if(error){alert(error.message);return}id=data.id}await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))});$('#recurring-dialog').close();await loadData()});
+$('#recurring-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,raw=Object.fromEntries(new FormData(f)),weekdays=$$('#recurring-weekdays input:checked').map(i=>Number(i.value)),sel=selectedDrivers('#recurring-driver-list'),vehicle=fleet.find(v=>v.id===raw.vehicle);if(!weekdays.length){alert('Bitte mindestens einen Wochentag auswählen.');return}const payload={title:raw.title,passenger_name:raw.passenger,customer_phone:raw.phone||null,pickup:raw.pickup,destination:raw.destination,start_date:raw.start_date,end_date:raw.end_date||null,weekdays,ride_time:raw.time,assigned_drivers:sel.ids,driver_names:sel.names,vehicle_id:raw.vehicle||null,vehicle_name:vehicle?.name||null,ride_type:raw.type,note:raw.note||null,active:true};let id=raw.id;if(id){const{error}=await db.from('recurring_series').update(payload).eq('id',id);if(error){alert(error.message);return}await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen')}else{const{data,error}=await db.from('recurring_series').insert(payload).select('id').single();if(error){alert(error.message);return}id=data.id}await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))});$('#recurring-dialog').close();await loadData()});
 async function toggleSeries(id){const s=series.find(x=>x.id===id);if(!s)return;const active=!s.active;const{error}=await db.from('recurring_series').update({active}).eq('id',id);if(error){alert(error.message);return}if(!active)await db.from('rides').delete().eq('series_id',id).gte('ride_date',isoDate(new Date())).neq('status','Abgeschlossen');else await db.rpc('generate_recurring_occurrences',{p_series:id,p_until:isoDate(new Date(Date.now()+365*86400000))})}
 function renderAll(){renderDispatch();renderStats();renderOverview();renderRides();renderFleet();renderCalendar();renderRecurring()}
-db.auth.onAuthStateChange((event,newSession)=>{
-  console.info("Taxi Erbas Auth:",event);
-  if(event==="SIGNED_OUT"){
-    session=null;
-    profile=null;
-    if(mobileSyncTimer)clearInterval(mobileSyncTimer);
-    mobileSyncTimer=null;
-    mobileSyncStarted=false;
-    return;
-  }
-  if(newSession){
-    session=newSession;
-    if(event==="TOKEN_REFRESHED" || event==="SIGNED_IN"){
-      loadData().catch(()=>{});
-    }
-  }
-});
-initialize();
+db.auth.onAuthStateChange((event,newSession)=>{if(event==='SIGNED_OUT'){session=null;profile=null}else if(newSession)session=newSession});initialize();
 })();
