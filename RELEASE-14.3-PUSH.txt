@@ -1,0 +1,28 @@
+TAXI ERBAS – RELEASE 14.3 / ECHTER HINTERGRUND-PUSH
+
+1) GitHub
+Alle Dateien dieses Pakets hochladen/ersetzen.
+
+2) Supabase SQL Editor
+Datei SUPABASE-PUSH-14-3.sql vollständig ausführen.
+
+3) Supabase Edge Function
+Neue Function mit Namen: send-ride-push
+Inhalt: supabase/functions/send-ride-push/index.ts
+Die Function muss mit JWT-Verifizierung bereitgestellt werden.
+
+4) Supabase Secrets für die Edge Function setzen
+VAPID_PUBLIC_KEY=BGSzg-_F2MygIHwvOJ9anh7PHeyhXMuMff3yf-nh5PkFzi3K8xmS1kltvLAatGih0zmXHzKMnY8812XFlD4EVaA
+VAPID_PRIVATE_KEY=I9_cTfMOEDZpXCgpbNct05EoP1YRTM8m3-bLTplPiSM
+VAPID_SUBJECT=mailto:info@taxi-erbas.de
+
+WICHTIG: VAPID_PRIVATE_KEY niemals in GitHub/Frontend eintragen.
+
+5) Fahrergerät
+Android/Desktop: Portal öffnen, anmelden, Benachrichtigungen aktivieren.
+iPhone/iPad: Portal in Safari öffnen -> Teilen -> Zum Home-Bildschirm -> installierte Web-App öffnen -> anmelden -> Benachrichtigungen aktivieren.
+
+6) Test
+Fahrer aktiviert Push. Danach im Büro eine Fahrt erstellen und genau diesem Fahrer zuweisen. Browser/Web-App des Fahrers schließen und neue Testfahrt anlegen. Push sollte als Systemmeldung erscheinen.
+
+Hinweis: Push wird beim Speichern einer Fahrt im Taxi-Erbas-Portal ausgelöst. Direkte Datenbankänderungen außerhalb des Portals lösen in 14.3 keinen Push aus.

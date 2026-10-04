@@ -318,6 +318,53 @@ knownRideIdsInitialized=true;
 renderAll()
 }
 
+
+function urlBase64ToUint8Array(base64String){
+  const padding="=".repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+  const raw=atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+async function getPushSubscription(){
+  if(!("serviceWorker" in navigator) || !window.TAXI_ERBAS_VAPID_PUBLIC_KEY)return null;
+  const reg=await navigator.serviceWorker.ready;
+  return await reg.pushManager.getSubscription();
+}
+async function savePushSubscription(subscription){
+  if(!subscription || !profile?.id)return;
+  const json=subscription.toJSON();
+  const row={
+    user_id:profile.id,
+    endpoint:json.endpoint,
+    p256dh:json.keys?.p256dh,
+    auth:json.keys?.auth,
+    user_agent:navigator.userAgent,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await db.from("push_subscriptions").upsert(row,{onConflict:"endpoint"});
+  if(error)throw error;
+}
+async function ensurePushSubscription(){
+  if(Notification.permission!=="granted" || !("PushManager" in window))return false;
+  const reg=await navigator.serviceWorker.ready;
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub){
+    sub=await reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:urlBase64ToUint8Array(window.TAXI_ERBAS_VAPID_PUBLIC_KEY)
+    });
+  }
+  await savePushSubscription(sub);
+  return true;
+}
+async function sendRidePush(rideId){
+  if(!canDispatch() || !rideId)return;
+  try{
+    const {error}=await db.functions.invoke("send-ride-push",{body:{ride_id:rideId}});
+    if(error)console.warn("Push konnte nicht ausgelöst werden:",error);
+  }catch(error){console.warn("Push-Aufruf fehlgeschlagen:",error)}
+}
+
 function showInAppNotification(title,body){
   let box=document.querySelector("#portal-notification-toast");
   if(!box){
@@ -444,7 +491,7 @@ function updateNotificationUI(){
   const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;
   if(!("Notification" in window)){s.textContent="nicht unterstützt";return}
   const state=Notification.permission;
-  s.textContent=state==="granted"?"aktiv · Portal geöffnet":state==="denied"?"im Browser blockiert":"nicht aktiviert";
+  s.textContent=state==="granted"?"aktiv · Hintergrund-Push":state==="denied"?"im Browser blockiert":"nicht aktiviert";
   b.classList.toggle("notification-on",state==="granted");
 }
 async function enableNotifications(){
@@ -465,6 +512,7 @@ async function enableNotifications(){
   updateNotificationUI();
 
   if(permission==="granted"){
+    try{await ensurePushSubscription()}catch(error){console.warn("Push-Registrierung fehlgeschlagen:",error);alert("Benachrichtigung ist erlaubt, aber die Hintergrund-Push-Registrierung ist fehlgeschlagen. Bitte Seite neu laden und erneut versuchen.");}
     await showPortalNotification(
       "Taxi Erbas",
       "Benachrichtigungen sind aktiviert."
@@ -475,12 +523,12 @@ async function openDashboard(){
 startStableSync();
 document.body.classList.toggle("driver-portal",profile?.role==="driver");
 document.body.classList.toggle("office-portal",canDispatch());
-$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData()}
+$("#login-screen").classList.add("hidden");$("#dashboard").classList.remove("hidden");$("#role-label").textContent={admin:"Administrator",dispatcher:"Disponent",driver:"Fahrer"}[profile.role]||profile.role;$("#user-name").textContent=profile.full_name||session.user.email;$$('[data-open-ride],[data-open-vehicle],#open-recurring').forEach(b=>b.style.display=canDispatch()?"":"none");const dn=$(".dispatch-nav"),rn=$(".recurring-nav");if(!canDispatch()){dn.style.display="none";rn.style.display="none";$$('.nav-button').forEach(b=>b.classList.remove('active'));$$('.view').forEach(v=>v.classList.remove('active'));$('[data-view="overview"]').classList.add('active');$('#view-overview').classList.add('active');$('#page-title').textContent='Übersicht'}else startClock();updateNotificationUI();subscribeRealtime();await loadData();if(Notification.permission==="granted")ensurePushSubscription().catch(console.warn)}
 async function initialize(){
   showAuthLoading();
 
   if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("portal-sw.js?v=14.2").catch(console.warn);
+    navigator.serviceWorker.register("portal-sw.js?v=14.3").catch(console.warn);
   }
 
   // Supabase restores persisted auth asynchronously.
@@ -934,6 +982,7 @@ if(mode==='group'&&passengers.length){
   }
 }
 
+await sendRidePush(rideId);
 $('#ride-dialog').close();
 await loadData()
 });

@@ -1568,3 +1568,36 @@ body.lightbox-open{overflow:hidden}
 .contact-booking-link{background:#111722!important;color:#fff!important}
 .contact-booking-link span{color:#f6c700!important}
 @media(max-width:780px){.contact-clean-grid,.contact-list-clean{grid-template-columns:1fr}.contact-list-clean>*{min-height:auto}}
+
+/* Release 14.4 – responsive polish */
+html,body{max-width:100%;overflow-x:hidden}
+.extra-service-grid.three-services{align-items:stretch}
+.three-services .extra-card{min-width:0;width:100%;padding:clamp(24px,2.25vw,34px)}
+.three-services .extra-card h3{max-width:100%;font-size:clamp(28px,2.65vw,42px);line-height:1.08;overflow-wrap:anywhere;word-break:normal;hyphens:auto}
+.three-services .extra-card>p,.three-services .route-list,.three-services .premium-list,.three-services .running-list{min-width:0;max-width:100%}
+.three-services .service-label{max-width:calc(100% - 56px);white-space:normal;line-height:1.25}
+.three-services .extra-number{right:22px;font-size:clamp(58px,5vw,76px)}
+@media (min-width:1101px) and (max-width:1280px){
+  .container{width:min(1180px,calc(100% - 32px))}
+  .three-services .extra-card{padding:26px 24px}
+  .three-services .extra-card h3{font-size:clamp(27px,2.7vw,35px)}
+  .three-services .premium-list{grid-template-columns:1fr}
+  .main-nav{gap:15px;font-size:12px}
+}
+@media (max-width:1100px){
+  .three-services .extra-card h3{font-size:clamp(30px,4.2vw,44px)}
+}
+@media (max-width:760px){
+  .extra-services .container{width:min(100% - 24px,1180px)}
+  .three-services .extra-card{padding:25px 20px;border-radius:22px}
+  .three-services .extra-card h3{font-size:clamp(29px,9vw,38px);overflow-wrap:break-word}
+  .three-services .service-label{max-width:calc(100% - 44px);font-size:9px}
+  .three-services .extra-number{right:16px;top:16px;font-size:54px}
+  .prestige-actions{align-items:flex-start;flex-direction:column;gap:10px}
+}
+@media (max-width:380px){
+  .container,.extra-services .container{width:calc(100% - 18px)}
+  .three-services .extra-card{padding:22px 16px}
+  .three-services .extra-card h3{font-size:28px}
+  .route-list div,.running-list li,.premium-list li{font-size:12px}
+}
