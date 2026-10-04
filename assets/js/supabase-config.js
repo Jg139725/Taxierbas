@@ -19,4 +19,4 @@ window.taxiSupabase = window.supabase.createClient(
 console.info("Taxi Erbas Auth 14.1 geladen");
 
 // Web Push 14.3 – dieser öffentliche VAPID-Key darf im Frontend stehen.
-window.TAXI_ERBAS_VAPID_PUBLIC_KEY = "BBQCFiQTgEsvMyLkVgT-B-yPQYGAcZ-Iaea5P460fqP2rXwVgI4DdB6Tql0ZznwYCUP2U-S3BorNrmeJ6tudVRU";
+window.TAXI_ERBAS_VAPID_PUBLIC_KEY = "BK0AKBqMFPOxKJCS6X0pYEKrd74qesvASDsUhtrZD1plwUEA8lSGsROh6Gf9P3kawf3d9QzT0NDrhmQ4u1_51AA";
