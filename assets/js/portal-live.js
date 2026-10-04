@@ -3,11 +3,11 @@
 const db=window.taxiSupabase;
 let authBootstrapFinished=false;
 let authBootstrapTimer=null;
- console.info("Taxi Erbas Portal Version 13.3 geladen");
+ console.info("Taxi Erbas Portal Release 14.2 geladen");
 let session=null,profile=null,rides=[],fleet=[],drivers=[],series=[],ridePassengers=[],rideConfirmations=[],realtimeChannel=null,clockTimer=null;
 let stableSyncTimer=null;
 let stableSyncStarted=false;
-let calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=null,knownRideIds=new Set();
+let calendarCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedCalendarDate=null,knownRideIds=new Set(),knownRideIdsInitialized=false;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const isoDate=d=>{const x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10)};
@@ -304,11 +304,37 @@ ridePassengers=results[2].error?[]:(results[2].data||[]);
 rideConfirmations=results[3].error?[]:(results[3].data||[]);
 drivers=canDispatch()&&!results[4]?.error?(results[4].data||[]):[];
 series=canDispatch()&&!results[5]?.error?(results[5].data||[]):[];
-knownRideIds=new Set(rides.map(r=>r.id));
+const nextRideIds=new Set(rides.map(r=>r.id));
+if(knownRideIdsInitialized && profile?.role==="driver"){
+  rides.filter(r=>!knownRideIds.has(r.id) && isMine(r)).forEach(r=>{
+    showPortalNotification(
+      "Taxi Erbas – Neue Fahrt",
+      `${String(r.ride_time||"").slice(0,5)} Uhr · ${r.pickup||"Abholung"} → ${r.destination||"Ziel"}`
+    );
+  });
+}
+knownRideIds=nextRideIds;
+knownRideIdsInitialized=true;
 renderAll()
 }
 
+function showInAppNotification(title,body){
+  let box=document.querySelector("#portal-notification-toast");
+  if(!box){
+    box=document.createElement("div");
+    box.id="portal-notification-toast";
+    box.className="portal-notification-toast";
+    document.body.appendChild(box);
+  }
+  box.innerHTML=`<strong>${escapeHtml(title)}</strong><span>${escapeHtml(body)}</span>`;
+  box.classList.add("show");
+  clearTimeout(showInAppNotification.timer);
+  showInAppNotification.timer=setTimeout(()=>box.classList.remove("show"),6500);
+  if(navigator.vibrate) navigator.vibrate([180,80,180]);
+}
+
 async function showPortalNotification(title,body){
+  showInAppNotification(title,body);
   if(!("Notification" in window) || Notification.permission!=="granted")return;
 
   try{
@@ -345,6 +371,7 @@ function notifyRide(payload){
   if(!assigned)return;
 
   const isNew=!knownRideIds.has(ride.id);
+  knownRideIds.add(ride.id);
   if(payload.eventType==="INSERT" || isNew){
     showPortalNotification(
       "Taxi Erbas – Neue Fahrt",
@@ -413,7 +440,13 @@ function startStableSync(){
 }
 
 function startClock(){const f=()=>{const n=new Date();if($("#dispatch-clock"))$("#dispatch-clock").textContent=n.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});if($("#dispatch-date"))$("#dispatch-date").textContent=n.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})};f();clearInterval(clockTimer);clockTimer=setInterval(f,30000)}
-function updateNotificationUI(){const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;const state=Notification.permission;s.textContent=state==="granted"?"aktiv":state==="denied"?"im Browser blockiert":"nicht aktiviert";b.classList.toggle("notification-on",state==="granted")}
+function updateNotificationUI(){
+  const b=$("#notification-button"),s=$("#notification-state");if(!b||!s)return;
+  if(!("Notification" in window)){s.textContent="nicht unterstützt";return}
+  const state=Notification.permission;
+  s.textContent=state==="granted"?"aktiv · Portal geöffnet":state==="denied"?"im Browser blockiert":"nicht aktiviert";
+  b.classList.toggle("notification-on",state==="granted");
+}
 async function enableNotifications(){
   const isiOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
   const standalone=window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true;
@@ -447,7 +480,7 @@ async function initialize(){
   showAuthLoading();
 
   if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("portal-sw.js?v=14.1").catch(console.warn);
+    navigator.serviceWorker.register("portal-sw.js?v=14.2").catch(console.warn);
   }
 
   // Supabase restores persisted auth asynchronously.

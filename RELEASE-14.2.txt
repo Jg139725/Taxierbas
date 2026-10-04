@@ -1,0 +1,21 @@
+TAXI ERBAS – RELEASE 14.2
+Datum: 04.10.2026
+
+Änderungen:
+- Benachrichtigungen bei neu zugewiesenen Fahrten stabilisiert.
+- Realtime + 8-Sekunden-Fallback erkennen neue Fahrer-Aufträge.
+- In-App-Hinweis ergänzt, damit eine neue Fahrt auch sichtbar wird, wenn das Betriebssystem Browser-Hinweise unterdrückt.
+- Vibration auf unterstützten Mobilgeräten ergänzt.
+- Responsive Layout für Smartphone, Tablet/MacBook und große Monitore überarbeitet.
+- Dialoge, Kalender, Leitstelle, Karten und Topbar auf kleinen Displays optimiert.
+- Cache-Version auf 14.2 erhöht.
+
+WICHTIG ZU PUSH:
+Die aktuelle statische GitHub/Supabase-Version nutzt Browser-Benachrichtigungen + Supabase Realtime. Sie benachrichtigt zuverlässig, solange Portal/PWA aktiv verbunden ist. Echte Hintergrund-Push-Nachrichten bei vollständig geschlossenem Portal benötigen zusätzlich einen Push-Server/Edge-Function mit Web-Push-Subscriptions und VAPID/APNs-Unterstützung; diese Server-Infrastruktur ist in diesem statischen Paket nicht enthalten.
+
+Release-Test:
+1. Fahrer einloggen.
+2. Benachrichtigungen aktivieren; Testmeldung muss erscheinen.
+3. Im Büro eine neue Fahrt genau diesem Fahrer zuweisen.
+4. Fahrerportal geöffnet/PWA aktiv lassen: In-App-Hinweis + Systembenachrichtigung müssen erscheinen.
+5. Smartphone Hochformat sowie Mac/PC prüfen.
